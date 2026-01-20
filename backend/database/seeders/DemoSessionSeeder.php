@@ -1,0 +1,300 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Session;
+use App\Models\User;
+use App\Models\Organization;
+use App\Models\QRCode;
+use Carbon\Carbon;
+
+/**
+ * DemoSessionSeeder
+ * 
+ * Seeds the sessions table with comprehensive demo sessions.
+ * Creates various session types: one-time, recurring (daily, weekly), with different statuses.
+ */
+class DemoSessionSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $this->command->info("STARTING DemoSessionSeeder");
+        
+        // Get organizations and teachers
+        $du = Organization::where('code', 'DU')->first();
+        $buet = Organization::where('code', 'BUET')->first();
+        $ctc = Organization::where('code', 'CTC')->first();
+
+        $teachers = User::withRole('teacher')->orWhere(function ($q) {
+            $q->withRole('session_manager');
+        })->get();
+
+        if ($teachers->isEmpty()) {
+            $this->command->warn('No teachers found. Please run DemoUserSeeder first.');
+            return;
+        }
+
+        $now = Carbon::now();
+
+        // Session 1: Active session happening now (DU)
+        $session1 = Session::create([
+            'organization_id' => $du?->id,
+            'title' => 'Advanced Database Systems - Lecture 5',
+            'description' => 'Covering database normalization, indexing strategies, and query optimization.',
+            'start_time' => $now->copy()->subMinutes(30),
+            'end_time' => $now->copy()->addMinutes(60),
+            'location_lat' => 23.7340,
+            'location_lng' => 90.3926,
+            'location_name' => 'DU Science Building, Room 301',
+            'radius_meters' => 100,
+            'session_type' => 'open',
+            'status' => 'active',
+            'requires_payment' => false,
+            'recurrence_type' => 'one_time',
+            'capacity' => 50,
+            'current_count' => 0,
+            'allow_entry_exit' => false,
+            'late_threshold_minutes' => 15,
+            'created_by' => $teachers->first()->id,
+        ]);
+
+        // Generate QR code for active session
+        QRCode::create([
+            'session_id' => $session1->id,
+            'code' => 'QR-' . strtoupper(bin2hex(random_bytes(8))),
+            'is_active' => true,
+            'expires_at' => $session1->end_time,
+        ]);
+
+        // Session 2: Upcoming session (BUET)
+        $session2 = Session::create([
+            'organization_id' => $buet?->id,
+            'title' => 'Software Engineering Principles',
+            'description' => 'Design patterns, SOLID principles, and clean code practices.',
+            'start_time' => $now->copy()->addHours(2),
+            'end_time' => $now->copy()->addHours(4),
+            'location_lat' => 23.7265,
+            'location_lng' => 90.3925,
+            'location_name' => 'BUET ECE Building, Auditorium',
+            'radius_meters' => 150,
+            'session_type' => 'open',
+            'status' => 'active',
+            'requires_payment' => false,
+            'recurrence_type' => 'one_time',
+            'capacity' => 100,
+            'current_count' => 0,
+            'allow_entry_exit' => true,
+            'late_threshold_minutes' => 10,
+            'created_by' => $teachers->skip(2)->first()?->id ?? $teachers->first()->id,
+        ]);
+
+        // Session 3: Completed session (yesterday)
+        $session3 = Session::create([
+            'organization_id' => $du?->id,
+            'title' => 'Machine Learning Fundamentals',
+            'description' => 'Introduction to supervised and unsupervised learning algorithms.',
+            'start_time' => $now->copy()->subDay()->setHour(10)->setMinute(0),
+            'end_time' => $now->copy()->subDay()->setHour(12)->setMinute(0),
+            'location_lat' => 23.7340,
+            'location_lng' => 90.3926,
+            'location_name' => 'DU Science Building, Room 205',
+            'radius_meters' => 100,
+            'session_type' => 'open',
+            'status' => 'completed',
+            'requires_payment' => false,
+            'recurrence_type' => 'one_time',
+            'capacity' => 40,
+            'current_count' => 35,
+            'allow_entry_exit' => false,
+            'late_threshold_minutes' => 15,
+            'created_by' => $teachers->first()->id,
+        ]);
+
+        // Session 4: Recurring daily session (parent)
+        $recurringDaily = Session::create([
+            'organization_id' => $buet?->id,
+            'title' => 'Data Structures & Algorithms - Daily Practice',
+            'description' => 'Daily problem-solving session for competitive programming.',
+            'start_time' => $now->copy()->addDay()->setHour(16)->setMinute(0),
+            'end_time' => $now->copy()->addDay()->setHour(18)->setMinute(0),
+            'location_lat' => 23.7265,
+            'location_lng' => 90.3925,
+            'location_name' => 'BUET CSE Lab 3',
+            'radius_meters' => 100,
+            'session_type' => 'open',
+            'status' => 'active',
+            'requires_payment' => false,
+            'recurrence_type' => 'daily',
+            'recurrence_end_date' => $now->copy()->addDays(30),
+            'capacity' => 30,
+            'current_count' => 0,
+            'allow_entry_exit' => false,
+            'late_threshold_minutes' => 10,
+            'created_by' => $teachers->skip(2)->first()?->id ?? $teachers->first()->id,
+        ]);
+
+        // Session 5: Recurring weekly session (parent)
+        $recurringWeekly = Session::create([
+            'organization_id' => $ctc?->id,
+            'title' => 'Professional Development Workshop',
+            'description' => 'Weekly workshop on leadership, communication, and team management.',
+            'start_time' => $now->copy()->next('Monday')->setHour(14)->setMinute(0),
+            'end_time' => $now->copy()->next('Monday')->setHour(17)->setMinute(0),
+            'location_lat' => 23.7808,
+            'location_lng' => 90.4217,
+            'location_name' => 'CTC Training Hall A',
+            'radius_meters' => 50,
+            'session_type' => 'admin_approved',
+            'status' => 'active',
+            'requires_payment' => true,
+            'payment_amount' => 500.00,
+            'recurrence_type' => 'weekly',
+            'recurrence_end_date' => $now->copy()->addWeeks(8),
+            'capacity' => 25,
+            'current_count' => 0,
+            'allow_entry_exit' => true,
+            'late_threshold_minutes' => 5,
+            'created_by' => $teachers->skip(4)->first()?->id ?? $teachers->first()->id,
+        ]);
+
+        // Session 6: Pre-registered session with payment
+        $session6 = Session::create([
+            'organization_id' => $ctc?->id,
+            'title' => 'Advanced Excel & Data Analytics',
+            'description' => 'Comprehensive training on Excel formulas, pivot tables, and data visualization.',
+            'start_time' => $now->copy()->addDays(3)->setHour(9)->setMinute(0),
+            'end_time' => $now->copy()->addDays(3)->setHour(13)->setMinute(0),
+            'location_lat' => 23.7808,
+            'location_lng' => 90.4217,
+            'location_name' => 'CTC Computer Lab 2',
+            'radius_meters' => 50,
+            'session_type' => 'pre_registered',
+            'status' => 'active',
+            'requires_payment' => true,
+            'payment_amount' => 1500.00,
+            'recurrence_type' => 'one_time',
+            'capacity' => 20,
+            'current_count' => 0,
+            'allow_entry_exit' => false,
+            'late_threshold_minutes' => 5,
+            'created_by' => $teachers->skip(4)->first()?->id ?? $teachers->first()->id,
+        ]);
+
+        // Session 7: Draft session (not yet published)
+        $session7 = Session::create([
+            'organization_id' => $du?->id,
+            'title' => 'Blockchain Technology & Cryptocurrencies',
+            'description' => 'Understanding blockchain fundamentals, smart contracts, and DeFi.',
+            'start_time' => $now->copy()->addWeek()->setHour(14)->setMinute(0),
+            'end_time' => $now->copy()->addWeek()->setHour(16)->setMinute(0),
+            'location_lat' => 23.7340,
+            'location_lng' => 90.3926,
+            'location_name' => 'DU Business Building, Seminar Room',
+            'radius_meters' => 100,
+            'session_type' => 'open',
+            'status' => 'draft',
+            'requires_payment' => false,
+            'recurrence_type' => 'one_time',
+            'capacity' => 60,
+            'current_count' => 0,
+            'allow_entry_exit' => false,
+            'late_threshold_minutes' => 15,
+            'created_by' => $teachers->skip(1)->first()?->id ?? $teachers->first()->id,
+        ]);
+
+        // Session 8: Cancelled session
+        $session8 = Session::create([
+            'organization_id' => $buet?->id,
+            'title' => 'Network Security - CANCELLED',
+            'description' => 'This session has been cancelled due to unforeseen circumstances.',
+            'start_time' => $now->copy()->addDays(2)->setHour(10)->setMinute(0),
+            'end_time' => $now->copy()->addDays(2)->setHour(12)->setMinute(0),
+            'location_lat' => 23.7265,
+            'location_lng' => 90.3925,
+            'location_name' => 'BUET ECE Building, Room 404',
+            'radius_meters' => 100,
+            'session_type' => 'open',
+            'status' => 'cancelled',
+            'requires_payment' => false,
+            'recurrence_type' => 'one_time',
+            'capacity' => 35,
+            'current_count' => 0,
+            'allow_entry_exit' => false,
+            'late_threshold_minutes' => 10,
+            'created_by' => $teachers->skip(3)->first()?->id ?? $teachers->first()->id,
+        ]);
+
+        // Session 9: Full capacity session
+        $session9 = Session::create([
+            'organization_id' => $ctc?->id,
+            'title' => 'Digital Marketing Masterclass - FULL',
+            'description' => 'SEO, SEM, social media marketing, and content strategy.',
+            'start_time' => $now->copy()->addDays(5)->setHour(10)->setMinute(0),
+            'end_time' => $now->copy()->addDays(5)->setHour(16)->setMinute(0),
+            'location_lat' => 23.7808,
+            'location_lng' => 90.4217,
+            'location_name' => 'CTC Main Hall',
+            'radius_meters' => 50,
+            'session_type' => 'pre_registered',
+            'status' => 'active',
+            'requires_payment' => true,
+            'payment_amount' => 2000.00,
+            'recurrence_type' => 'one_time',
+            'capacity' => 15,
+            'current_count' => 15, // Full
+            'allow_entry_exit' => false,
+            'late_threshold_minutes' => 5,
+            'created_by' => $teachers->skip(4)->first()?->id ?? $teachers->first()->id,
+        ]);
+
+        // Session 10: Past completed session (for attendance history)
+        $session10 = Session::create([
+            'organization_id' => $du?->id,
+            'title' => 'Web Development Bootcamp - Day 1',
+            'description' => 'HTML, CSS, JavaScript fundamentals.',
+            'start_time' => $now->copy()->subDays(3)->setHour(9)->setMinute(0),
+            'end_time' => $now->copy()->subDays(3)->setHour(17)->setMinute(0),
+            'location_lat' => 23.7340,
+            'location_lng' => 90.3926,
+            'location_name' => 'DU Computer Lab 1',
+            'radius_meters' => 100,
+            'session_type' => 'open',
+            'status' => 'completed',
+            'requires_payment' => false,
+            'recurrence_type' => 'one_time',
+            'capacity' => 30,
+            'current_count' => 28,
+            'allow_entry_exit' => true,
+            'late_threshold_minutes' => 15,
+            'created_by' => $teachers->first()->id,
+        ]);
+
+        // Generate QR codes for all sessions
+        $sessions = [$session1, $session2, $session3, $recurringDaily, $recurringWeekly, $session6, $session7, $session8, $session9, $session10];
+        foreach ($sessions as $session) {
+            if ($session->qrCodes()->doesntExist()) {
+                QRCode::create([
+                    'session_id' => $session->id,
+                    'code' => 'QR-' . strtoupper(bin2hex(random_bytes(8))),
+                    'is_active' => $session->status === 'active',
+                    'expires_at' => $session->end_time,
+                ]);
+            }
+        }
+
+        $this->command->info('✓ Demo sessions seeded successfully!');
+        $this->command->info('  - 10 sessions created');
+        $this->command->info('  - 1 active session (happening now)');
+        $this->command->info('  - 1 upcoming session');
+        $this->command->info('  - 2 completed sessions');
+        $this->command->info('  - 1 recurring daily session');
+        $this->command->info('  - 1 recurring weekly session');
+        $this->command->info('  - 1 draft session');
+        $this->command->info('  - 1 cancelled session');
+        $this->command->info('  - 1 full capacity session');
+    }
+}
