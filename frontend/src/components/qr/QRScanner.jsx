@@ -10,10 +10,10 @@ const QRScanner = ({ onScan, onClose }) => {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Scan QR Code</h2>
+          <h2 className="text-lg sm:text-xl font-bold">Scan QR Code</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -22,10 +22,10 @@ const QRScanner = ({ onScan, onClose }) => {
           </button>
         </div>
         
-        <div className="relative bg-black rounded-lg overflow-hidden">
+        <div className="relative bg-black rounded-lg overflow-hidden aspect-square sm:aspect-video">
           <video
             ref={videoRef}
-            className="w-full h-auto"
+            className="w-full h-full object-cover"
             autoPlay
             playsInline
             muted
@@ -45,14 +45,14 @@ const QRScanner = ({ onScan, onClose }) => {
         )}
 
         {scanning && !error && (
-          <p className="mt-4 text-center text-gray-600 text-sm">
+          <p className="mt-4 text-center text-gray-600 text-xs sm:text-sm">
             Position QR code within the frame
           </p>
         )}
 
         <button
           onClick={onClose}
-          className="mt-4 w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600"
+          className="mt-4 w-full bg-gray-500 text-white py-2.5 sm:py-2 rounded hover:bg-gray-600 text-sm sm:text-base font-medium"
         >
           Close
         </button>

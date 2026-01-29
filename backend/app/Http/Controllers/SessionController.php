@@ -24,7 +24,13 @@ class SessionController extends Controller
      */
     public function index(Request $request)
     {
+        $user = auth()->user();
         $query = Session::with(['creator', 'organization']);
+
+        // Scope to organization for org admin
+        if ($user->hasRole('organization_admin')) {
+            $query->inOrganization($user->organization_id);
+        }
 
         // Filters
         if ($request->has('status')) {
@@ -46,6 +52,14 @@ class SessionController extends Controller
         // Default to not showing child sessions (instances) unless specifically requested
         if (!$request->has('include_instances')) {
             $query->whereNull('parent_session_id');
+        }
+        
+        // Only show active/upcoming sessions for students unless searching
+        if ($user->hasRole('student') && !$request->has('search')) {
+            $query->where(function($q) {
+                $q->where('status', 'active')
+                  ->orWhere('start_time', '>=', now());
+            });
         }
 
         $sessions = $query->orderBy('start_time', 'desc')->get();
@@ -142,7 +156,10 @@ class SessionController extends Controller
                 'capacity' => $request->capacity ?? $request->max_attendees, // Use max_attendees as fallback if capacity not set
                 'allow_entry_exit' => $request->allow_entry_exit ?? false,
                 'late_threshold_minutes' => $request->late_threshold_minutes ?? 15,
-                'created_by' => auth()->id()
+                'late_threshold_minutes' => $request->late_threshold_minutes ?? 15,
+                'created_by' => auth()->id(),
+                'organization_id' => auth()->user()->hasRole('organization_admin') ? auth()->user()->organization_id : null,
+                'organization_id' => auth()->user()->hasRole('organization_admin') ? auth()->user()->organization_id : null,
             ]);
 
             if ($session->isRecurring()) {
@@ -230,12 +247,16 @@ class SessionController extends Controller
     {
         $session = Session::findOrFail($id);
 
-        // Only admin can delete
-        if (auth()->user()->role !== 'admin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized'
-            ], 403);
+        // Check permission
+        $user = auth()->user();
+        if ($user->role !== 'admin') {
+            if ($user->hasRole('organization_admin')) {
+                if ($session->organization_id !== $user->organization_id) {
+                    return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+                }
+            } else {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
         }
 
         // Also delete child sessions if this is a parent

@@ -1,0 +1,10 @@
+[
+  {
+    "glob": "!.git",
+    "matchBase": false
+  },
+  {
+    "glob": "!vendor/**",
+    "matchBase": false
+  }
+]

@@ -31,6 +31,9 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
+    // Organizations (Public - for registration)
+    Route::get('/organizations', [App\Http\Controllers\OrganizationController::class, 'index']);
+
     // Protected Routes
     Route::middleware(['jwt.auth'])->group(function () {
         
@@ -67,6 +70,15 @@ Route::prefix('v1')->group(function () {
         Route::post('/payment/initiate', [PaymentController::class, 'initiate']);
         Route::get('/payment/status/{id}', [PaymentController::class, 'status']);
 
+        // Organization Admin Routes
+        Route::middleware('role:organization_admin,admin')->group(function () {
+            Route::get('/organizations/{id}/statistics', [App\Http\Controllers\OrganizationController::class, 'statistics']);
+            Route::get('/users', [UserController::class, 'index']);
+            Route::post('/users', [UserController::class, 'store']);
+            Route::put('/users/{id}', [UserController::class, 'update']);
+            Route::delete('/users/{id}', [UserController::class, 'destroy']);
+        });
+
         // Admin
         Route::prefix('admin')->middleware('role:admin')->group(function () {
             Route::get('/dashboard', [AdminController::class, 'dashboard']);
@@ -89,6 +101,16 @@ Route::prefix('v1')->group(function () {
             Route::get('/reports/attendance', [AdminController::class, 'attendanceReport']);
             Route::get('/reports/attendance/export', [AdminController::class, 'exportAttendanceReport']);
             Route::get('/reports/sessions/export', [AdminController::class, 'exportSessionReport']);
+            
+            // Organization Management
+            Route::get('/organizations', [App\Http\Controllers\OrganizationController::class, 'adminIndex']);
+            Route::get('/organizations/{id}', [App\Http\Controllers\OrganizationController::class, 'show']);
+            Route::post('/organizations', [App\Http\Controllers\OrganizationController::class, 'store']);
+            Route::put('/organizations/{id}', [App\Http\Controllers\OrganizationController::class, 'update']);
+            Route::delete('/organizations/{id}', [App\Http\Controllers\OrganizationController::class, 'destroy']);
+            Route::post('/organizations/{id}/restore', [App\Http\Controllers\OrganizationController::class, 'restore']);
+            Route::post('/organizations/{id}/toggle-status', [App\Http\Controllers\OrganizationController::class, 'toggleStatus']);
+            Route::get('/organizations/{id}/statistics', [App\Http\Controllers\OrganizationController::class, 'statistics']);
         });
     });
 

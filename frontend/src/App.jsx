@@ -10,6 +10,11 @@ import Sessions from './pages/Sessions'
 import Attendance from './pages/Attendance'
 import Profile from './pages/Profile'
 import Admin from './pages/Admin'
+import Organizations from './pages/Organizations'
+import PaymentCallback from './pages/PaymentCallback'
+import PaymentDemo from './pages/PaymentDemo'
+import OrganizationDashboard from './pages/OrganizationDashboard'
+import OrgUsers from './pages/OrgUsers'
 
 // Components
 import Layout from './components/common/Layout'
@@ -23,9 +28,9 @@ function App() {
     <Router>
       <div className="min-h-screen bg-dark overflow-hidden relative">
         {/* Animated Background Shapes */}
-        <div className="bg-shape w-96 h-96 bg-premium-primary top-[-10%] left-[-5%]"></div>
-        <div className="bg-shape w-[500px] h-[500px] bg-premium-secondary bottom-[-10%] right-[-5%] animation-delay-2000"></div>
-        <div className="bg-shape w-64 h-64 bg-premium-accent top-[20%] right-[10%] opacity-20"></div>
+        <div className="bg-shape w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-premium-primary top-[-10%] left-[-5%]"></div>
+        <div className="bg-shape w-80 h-80 sm:w-96 sm:h-96 lg:w-[500px] lg:h-[500px] bg-premium-secondary bottom-[-10%] right-[-5%] animation-delay-2000"></div>
+        <div className="bg-shape w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 bg-premium-accent top-[20%] right-[10%] opacity-20"></div>
 
         <Routes>
           {/* Public Routes */}
@@ -43,6 +48,26 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+             path="/org-dashboard"
+             element={
+               <RoleRoute allowedRoles={['organization_admin']}>
+                 <Layout>
+                   <OrganizationDashboard />
+                 </Layout>
+               </RoleRoute>
+             }
+           />
+          <Route
+             path="/org-users"
+             element={
+               <RoleRoute allowedRoles={['organization_admin']}>
+                 <Layout>
+                   <OrgUsers />
+                 </Layout>
+               </RoleRoute>
+             }
+           />
           <Route
             path="/sessions/*"
             element={
@@ -74,6 +99,26 @@ function App() {
             }
           />
           
+          <Route
+            path="/payment/callback/:gateway"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <PaymentCallback />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/payment/demo"
+            element={
+              <ProtectedRoute>
+                <PaymentDemo />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Admin Routes */}
           <Route
             path="/admin/*"
@@ -81,6 +126,17 @@ function App() {
               <RoleRoute allowedRoles={['admin']}>
                 <Layout>
                   <Admin />
+                </Layout>
+              </RoleRoute>
+            }
+          />
+          
+          <Route
+            path="/organizations"
+            element={
+              <RoleRoute allowedRoles={['admin']}>
+                <Layout>
+                  <Organizations />
                 </Layout>
               </RoleRoute>
             }

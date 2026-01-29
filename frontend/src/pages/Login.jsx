@@ -28,18 +28,18 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
       <div className="w-full max-w-md z-10">
-        <div className="glass rounded-[2.5rem] p-10 border border-white/20 shadow-2xl relative overflow-hidden">
+        <div className="glass rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 border border-white/20 shadow-2xl relative overflow-hidden">
           {/* Decorative inner glow */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-premium-primary/20 blur-[60px]"></div>
           
           <div className="relative z-10 text-center mb-10">
-            <h1 className="text-4xl font-extrabold tracking-tight mb-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">
               <span className="text-white">Qt</span>
               <span className="text-premium-primary">tenzy</span>
             </h1>
-            <p className="text-white/60 font-medium">Smart QR Attendance</p>
+            <p className="text-white/60 font-medium text-sm sm:text-base">Smart QR Attendance</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
@@ -48,7 +48,7 @@ const Login = () => {
                 <input
                   type="email"
                   required
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   placeholder="Email Address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -58,7 +58,7 @@ const Login = () => {
                 <input
                   type="password"
                   required
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -69,7 +69,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-premium text-white font-bold py-4 rounded-2xl shadow-lg shadow-premium-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100"
+              className="w-full bg-gradient-premium text-white font-bold py-3.5 sm:py-4 rounded-2xl shadow-lg shadow-premium-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 text-sm sm:text-base"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

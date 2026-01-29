@@ -70,15 +70,15 @@ const Profile = () => {
   }
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-6 sm:space-y-8 pb-8 sm:pb-10">
       <div>
-        <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Your Profile</h1>
-        <p className="text-white/40 font-medium tracking-tight">Manage your personal information and biometric data.</p>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">Your Profile</h1>
+        <p className="text-white/40 font-medium tracking-tight text-sm sm:text-base">Manage your personal information and biometric data.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Main Info */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-6 sm:space-y-8">
           <GlassCard className="relative overflow-hidden border border-white/5">
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-premium-secondary/10 blur-[80px]"></div>
             
@@ -95,14 +95,14 @@ const Profile = () => {
                     {profile.name?.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-dark shadow-lg border-4 border-dark group-hover:scale-110 transition-transform cursor-pointer">
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center text-dark shadow-lg border-2 sm:border-4 border-dark group-hover:scale-110 transition-transform cursor-pointer text-sm sm:text-base">
                   📸
                 </div>
               </div>
 
               <div className="text-center md:text-left">
-                <h2 className="text-3xl font-bold text-white mb-1">{profile.name}</h2>
-                <p className="text-white/40 font-medium mb-4">{profile.email}</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1">{profile.name}</h2>
+                <p className="text-white/40 font-medium mb-3 sm:mb-4 text-sm sm:text-base">{profile.email}</p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-2">
                   <span className="px-4 py-1.5 bg-premium-primary/20 text-premium-primary rounded-xl text-xs font-bold uppercase tracking-wider border border-premium-primary/20">
                     {profile.role}
@@ -116,7 +116,7 @@ const Profile = () => {
               {!editing && (
                 <button
                   onClick={() => setEditing(true)}
-                  className="md:ml-auto px-6 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all border border-white/10"
+                  className="md:ml-auto px-5 sm:px-6 py-2 sm:py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-semibold transition-all border border-white/10 text-sm sm:text-base"
                 >
                   Edit Profile
                 </button>
@@ -125,7 +125,7 @@ const Profile = () => {
 
             <div className="border-t border-white/5 pt-8 relative z-10">
               {editing ? (
-                <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form onSubmit={handleUpdate} className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-white/40 ml-1">Full Name</label>
                     <input
@@ -145,7 +145,7 @@ const Profile = () => {
                       className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:ring-2 focus:ring-premium-primary/50 transition-all"
                     />
                   </div>
-                  <div className="md:col-span-2 flex gap-3 pt-4">
+                  <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3 pt-4">
                     <button type="submit" className="bg-gradient-premium text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-premium-primary/20 hover:scale-[1.02] transition-all">
                       Save Changes
                     </button>
@@ -183,7 +183,7 @@ const Profile = () => {
         </div>
 
         {/* Sidebar Cards */}
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           <GlassCard className="border border-white/5 relative overflow-hidden group">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 rounded-2xl bg-premium-primary/20 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">

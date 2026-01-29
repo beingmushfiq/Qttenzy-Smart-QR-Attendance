@@ -58,8 +58,8 @@ const FaceEnrollment = ({ onEnrolled, onClose }) => {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6">
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-4 sm:p-6">
           <p>Loading face recognition models...</p>
         </div>
       </div>
@@ -68,8 +68,8 @@ const FaceEnrollment = ({ onEnrolled, onClose }) => {
 
   if (error || !modelsLoaded) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6">
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-4 sm:p-6">
           <p className="text-red-500">{error || 'Failed to load models'}</p>
           <button onClick={onClose} className="mt-4 px-4 py-2 bg-gray-500 text-white rounded">
             Close
@@ -80,10 +80,10 @@ const FaceEnrollment = ({ onEnrolled, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Enroll Your Face</h2>
+          <h2 className="text-lg sm:text-xl font-bold">Enroll Your Face</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -92,31 +92,31 @@ const FaceEnrollment = ({ onEnrolled, onClose }) => {
           </button>
         </div>
 
-        <div className="relative bg-black rounded-lg overflow-hidden">
+        <div className="relative bg-black rounded-lg overflow-hidden aspect-square sm:aspect-video">
           <video 
             ref={videoRef} 
             autoPlay 
             playsInline 
-            className="w-full h-auto"
+            className="w-full h-full object-cover"
           />
           <canvas ref={canvasRef} className="hidden" />
         </div>
 
-        <p className="mt-4 text-sm text-gray-600">
+        <p className="mt-4 text-xs sm:text-sm text-gray-600">
           Ensure your face is clearly visible and well-lit. Click "Enroll Face" when ready.
         </p>
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-col sm:flex-row gap-2">
           <button
             onClick={handleEnroll}
             disabled={enrolling}
-            className="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-blue-500 text-white py-2.5 sm:py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium"
           >
             {enrolling ? 'Enrolling...' : 'Enroll Face'}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-500 text-white py-2 rounded hover:bg-gray-600"
+            className="flex-1 bg-gray-500 text-white py-2.5 sm:py-2 rounded hover:bg-gray-600 text-sm sm:text-base font-medium"
           >
             Cancel
           </button>

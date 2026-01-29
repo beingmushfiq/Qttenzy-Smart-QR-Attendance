@@ -18,31 +18,31 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8 sm:space-y-10">
       <div>
-        <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
           Welcome back, <span className="text-gradient font-black">{user.name.split(' ')[0]}!</span> 👋
         </h1>
-        <p className="text-white/40 font-medium">
+        <p className="text-white/40 font-medium text-sm sm:text-base">
           Here's what's happening today in <span className="text-premium-primary">Qttenzy</span>.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-8">
         {[
           { title: 'Sessions', desc: 'Manage your active and upcoming sessions', link: '/sessions', icon: '📅', color: 'from-blue-500 to-indigo-600' },
           { title: 'Attendance', desc: 'Scan QR and mark your presence instantly', link: '/attendance', icon: '✅', color: 'from-emerald-400 to-teal-500' },
           { title: 'Profile', desc: 'View your stats and manage face enrollment', link: '/profile', icon: '👤', color: 'from-purple-500 to-pink-500' },
         ].map((item) => (
           <GlassCard key={item.title} className="group overflow-hidden border border-white/5">
-            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-3xl mb-6 shadow-lg transform group-hover:rotate-6 transition-transform`}>
+            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center text-2xl sm:text-3xl mb-4 sm:mb-6 shadow-lg transform group-hover:rotate-6 transition-transform`}>
               {item.icon}
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
-            <p className="text-white/40 text-sm leading-relaxed mb-6">{item.desc}</p>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{item.title}</h3>
+            <p className="text-white/40 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6">{item.desc}</p>
             <button
               onClick={() => navigate(item.link)}
-              className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-semibold transition-all flex items-center gap-2 group/btn"
+              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 group/btn"
             >
               Explore <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
             </button>

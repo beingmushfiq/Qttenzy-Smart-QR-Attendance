@@ -40,26 +40,26 @@ const AdminDashboard = () => {
   ]
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
           Admin <span className="text-gradient font-black">Dashboard</span> 🛡️
         </h1>
-        <p className="text-white/40 font-medium">
+        <p className="text-white/40 font-medium text-sm sm:text-base">
           Manage users, sessions, and attendance approvals
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {statCards.map((stat) => (
           <GlassCard key={stat.title} className="group overflow-hidden border border-white/5">
             <div className="flex items-center gap-4">
-              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-3xl shadow-lg transform group-hover:rotate-6 transition-transform`}>
+              <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${stat.color} flex items-center justify-center text-2xl sm:text-3xl shadow-lg transform group-hover:rotate-6 transition-transform`}>
                 {stat.icon}
               </div>
               <div>
                 <p className="text-white/60 text-sm font-medium">{stat.title}</p>
-                <p className="text-3xl font-bold text-white">{stat.value}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-white">{stat.value}</p>
               </div>
             </div>
           </GlassCard>
@@ -153,19 +153,20 @@ const AdminUsers = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
           User <span className="text-gradient font-black">Management</span> 👥
         </h1>
-        <p className="text-white/40 font-medium">
+        <p className="text-white/40 font-medium text-sm sm:text-base">
           Approve, manage, and monitor all users
         </p>
       </div>
 
       <GlassCard>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto -mx-4 sm:-mx-6">
+          <div className="inline-block min-w-full align-middle px-4 sm:px-6">
+            <table className="min-w-full">
             <thead>
               <tr className="border-b border-white/10">
                 <th className="text-left py-3 px-4 text-white/60 font-semibold">Name</th>
@@ -209,7 +210,8 @@ const AdminUsers = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </GlassCard>
     </div>
@@ -261,12 +263,12 @@ const AdminAttendances = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
           Pending <span className="text-gradient font-black">Attendances</span> ✋
         </h1>
-        <p className="text-white/40 font-medium">
+        <p className="text-white/40 font-medium text-sm sm:text-base">
           Review and approve attendance requests
         </p>
       </div>
@@ -276,10 +278,10 @@ const AdminAttendances = () => {
           <p className="text-white/40 text-lg">No pending attendances</p>
         </GlassCard>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {attendances.map((attendance) => (
             <GlassCard key={attendance.id} className="border border-white/10">
-              <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                 <div>
                   <h3 className="text-white font-bold">{attendance.user?.name}</h3>
                   <p className="text-white/60 text-sm">{attendance.session?.title}</p>
@@ -287,7 +289,7 @@ const AdminAttendances = () => {
                     {new Date(attendance.verified_at).toLocaleString()}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={() => handleApprove(attendance.id)}
                     className="px-4 py-2 rounded-xl bg-green-500/20 hover:bg-green-500/30 text-green-300 font-semibold transition-all"
@@ -334,17 +336,17 @@ const AdminReports = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
           Reports & <span className="text-gradient font-black">Analytics</span> 📊
         </h1>
-        <p className="text-white/40 font-medium">
+        <p className="text-white/40 font-medium text-sm sm:text-base">
           Export and analyze attendance data
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <GlassCard className="border border-white/10">
           <h3 className="text-xl font-bold text-white mb-4">Attendance Report</h3>
           <p className="text-white/60 mb-6">Export all attendance records with filters</p>
@@ -385,11 +387,11 @@ const Admin = () => {
   return (
     <div className="space-y-6">
       {/* Admin Navigation */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
         {navItems.map((item) => (
           <Link key={item.path} to={item.path}>
             <button
-              className={`px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap ${
+              className={`px-3 sm:px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${
                 location.pathname === item.path
                   ? 'bg-gradient-premium text-white'
                   : 'bg-white/5 text-white/60 hover:bg-white/10'

@@ -13,6 +13,7 @@
     "maatwebsite/excel": "^3.1",
     "simplesoftwareio/simple-qrcode": "^4.2",
     "spatie/laravel-permission": "^6.0",
+    "stripe/stripe-php": "^19.2",
     "tymon/jwt-auth": "^2.0"
   },
   "require-dev": {
@@ -70,4 +71,3 @@
   "minimum-stability": "stable",
   "prefer-stable": true
 }
-

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { authAPI } from '../services/api/auth'
+import { getOrganizations } from '../services/api/organization'
 import { toast } from 'react-toastify'
-import apiClient from '../services/api/client'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -23,10 +23,13 @@ const Register = () => {
     // Fetch organizations for dropdown
     const fetchOrganizations = async () => {
       try {
-        const response = await apiClient.get('/organizations')
+        const response = await getOrganizations()
+        // API client already unwraps to { success, data }, so use response.data
+        console.log('Organizations response:', response)
         setOrganizations(response.data || [])
       } catch (error) {
         console.error('Failed to fetch organizations:', error)
+        toast.error('Failed to load organizations')
       }
     }
     fetchOrganizations()
@@ -61,29 +64,29 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
       <div className="w-full max-w-2xl z-10">
-        <div className="glass rounded-[2.5rem] p-10 border border-white/20 shadow-2xl relative overflow-hidden">
+        <div className="glass rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 border border-white/20 shadow-2xl relative overflow-hidden">
           {/* Decorative inner glow */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-premium-primary/20 blur-[60px]"></div>
           
-          <div className="relative z-10 text-center mb-8">
-            <h1 className="text-4xl font-extrabold tracking-tight mb-2">
+          <div className="relative z-10 text-center mb-6 sm:mb-8">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">
               <span className="text-white">Create </span>
               <span className="text-premium-primary">Account</span>
             </h1>
-            <p className="text-white/60 font-medium">Join Qttenzy Smart Attendance</p>
+            <p className="text-white/60 font-medium text-sm sm:text-base">Join Qttenzy Smart Attendance</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 relative z-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Full Name */}
               <div className="group relative">
                 <input
                   type="text"
                   name="name"
                   required
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   placeholder="Full Name"
                   value={formData.name}
                   onChange={handleChange}
@@ -96,7 +99,7 @@ const Register = () => {
                   type="email"
                   name="email"
                   required
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   placeholder="Email Address"
                   value={formData.email}
                   onChange={handleChange}
@@ -108,7 +111,7 @@ const Register = () => {
                 <input
                   type="tel"
                   name="phone"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   placeholder="Phone Number (Optional)"
                   value={formData.phone}
                   onChange={handleChange}
@@ -120,7 +123,7 @@ const Register = () => {
                 <input
                   type="text"
                   name="student_id"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   placeholder="Student/Employee ID (Optional)"
                   value={formData.student_id}
                   onChange={handleChange}
@@ -132,7 +135,7 @@ const Register = () => {
                 <select
                   name="organization_id"
                   required
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   value={formData.organization_id}
                   onChange={handleChange}
                 >
@@ -150,7 +153,7 @@ const Register = () => {
                 <select
                   name="role"
                   required
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   value={formData.role}
                   onChange={handleChange}
                 >
@@ -166,7 +169,7 @@ const Register = () => {
                   name="password"
                   required
                   minLength="8"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   placeholder="Password (min 8 chars)"
                   value={formData.password}
                   onChange={handleChange}
@@ -180,7 +183,7 @@ const Register = () => {
                   name="password_confirmation"
                   required
                   minLength="8"
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   placeholder="Confirm Password"
                   value={formData.password_confirmation}
                   onChange={handleChange}
@@ -191,7 +194,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-premium text-white font-bold py-4 rounded-2xl shadow-lg shadow-premium-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 mt-6"
+              className="w-full bg-gradient-premium text-white font-bold py-3.5 sm:py-4 rounded-2xl shadow-lg shadow-premium-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 mt-5 sm:mt-6 text-sm sm:text-base"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

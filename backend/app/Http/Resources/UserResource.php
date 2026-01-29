@@ -21,6 +21,7 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'avatar' => $this->avatar,
             'role' => $this->role,
+            'organization_id' => $this->organization_id,
             'is_active' => $this->is_active,
             'webauthn_enabled' => $this->webauthn_enabled,
             'face_enrolled' => $this->faceEnrollments()->where('enrollment_status', 'approved')->exists(),

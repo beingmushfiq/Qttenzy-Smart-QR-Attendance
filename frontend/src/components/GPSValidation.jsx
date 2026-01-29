@@ -105,15 +105,15 @@ const GPSValidation = ({ sessionLocation, onValidate, onError }) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <button
         onClick={getCurrentLocation}
         disabled={loading}
-        className="w-full bg-gradient-premium text-white font-bold py-4 rounded-2xl shadow-lg shadow-premium-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100"
+        className="w-full bg-gradient-premium text-white font-bold py-3.5 sm:py-4 rounded-2xl shadow-lg shadow-premium-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 text-sm sm:text-base"
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">
-            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -123,10 +123,10 @@ const GPSValidation = ({ sessionLocation, onValidate, onError }) => {
       </button>
 
       {location && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-3 sm:p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-white/60 text-sm">Your Location</span>
-            <span className="text-white text-sm font-mono">
+            <span className="text-white/60 text-xs sm:text-sm">Your Location</span>
+            <span className="text-white text-xs sm:text-sm font-mono break-all">
               {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
             </span>
           </div>
@@ -134,15 +134,15 @@ const GPSValidation = ({ sessionLocation, onValidate, onError }) => {
           {distance !== null && (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-white/60 text-sm">Distance</span>
-                <span className="text-white text-sm font-bold">
+                <span className="text-white/60 text-xs sm:text-sm">Distance</span>
+                <span className="text-white text-xs sm:text-sm font-bold">
                   {distance}m
                 </span>
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-white/60 text-sm">Status</span>
-                <span className={`text-sm font-bold ${isValid ? 'text-green-400' : 'text-red-400'}`}>
+                <span className="text-white/60 text-xs sm:text-sm">Status</span>
+                <span className={`text-xs sm:text-sm font-bold ${isValid ? 'text-green-400' : 'text-red-400'}`}>
                   {isValid ? '✓ Within Range' : '✗ Out of Range'}
                 </span>
               </div>
@@ -150,7 +150,7 @@ const GPSValidation = ({ sessionLocation, onValidate, onError }) => {
           )}
           
           <div className="flex items-center justify-between">
-            <span className="text-white/60 text-sm">Accuracy</span>
+            <span className="text-white/60 text-xs sm:text-sm">Accuracy</span>
             <span className="text-white/40 text-xs">
               ±{Math.round(location.accuracy)}m
             </span>
@@ -158,7 +158,7 @@ const GPSValidation = ({ sessionLocation, onValidate, onError }) => {
         </div>
       )}
 
-      <p className="text-white/40 text-xs text-center">
+      <p className="text-white/40 text-[10px] sm:text-xs text-center px-2">
         Allow location access when prompted
       </p>
     </div>

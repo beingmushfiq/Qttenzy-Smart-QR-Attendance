@@ -120,6 +120,15 @@ class RolePermissionSeeder extends Seeder
         ])->get();
         $sessionManagerRole->permissions()->sync($sessionManagerPermissions->pluck('id'));
 
+        // Create Organization Admin Role
+        $orgAdminRole = Role::firstOrCreate(
+            ['name' => 'organization_admin'],
+            [
+                'display_name' => 'Organization Admin',
+                'description' => 'Can manage users and sessions for their organization'
+            ]
+        );
+
         // Assign Permissions to Student
         $studentPermissions = Permission::whereIn('name', [
             'view_sessions',
@@ -127,6 +136,24 @@ class RolePermissionSeeder extends Seeder
             'view_attendance',
         ])->get();
         $studentRole->permissions()->sync($studentPermissions->pluck('id'));
+
+        // Assign Permissions to Organization Admin
+        $orgAdminPermissions = Permission::whereIn('name', [
+            'view_users',
+            'create_users',
+            'edit_users',
+            'delete_users',
+            'view_sessions',
+            'create_sessions',
+            'edit_sessions',
+            'delete_sessions',
+            'generate_qr',
+            'view_attendance',
+            'approve_attendance',
+            'view_reports',
+            'export_reports',
+        ])->get();
+        $orgAdminRole->permissions()->sync($orgAdminPermissions->pluck('id'));
 
         $this->command->info('✓ Roles and permissions seeded successfully!');
     }

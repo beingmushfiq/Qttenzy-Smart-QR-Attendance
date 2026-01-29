@@ -87,3 +87,11 @@ frontend/public/models/*.weights
 # Deployment
 .vercel/
 .netlify/
+
+# Temporary test files
+backend/*.log
+backend/*.txt
+backend/test_*.php
+backend/setup_database.php
+backend/create_db.php
+create_db.php

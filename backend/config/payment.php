@@ -22,5 +22,12 @@ return [
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Demo Mode (For Testing/Demo Without Real Credentials)
+    |--------------------------------------------------------------------------
+    */
+    'demo_mode' => env('PAYMENT_DEMO_MODE', false),
 ];
 

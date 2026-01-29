@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { sessionAPI } from '../../services/api/session';
 import { attendanceAPI } from '../../services/api/attendance';
+import { initiatePayment } from '../../services/api/payment';
 import { useAuthStore } from '../../store/authStore';
 import { toast } from 'react-toastify';
 import { QRCodeSVG } from 'qrcode.react';
@@ -17,6 +18,8 @@ const SessionDetail = () => {
   const [showQR, setShowQR] = useState(false);
   const [qrData, setQrData] = useState(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   useEffect(() => {
     fetchSession();
@@ -55,6 +58,31 @@ const SessionDetail = () => {
 
   const handleMarkAttendance = () => {
     setShowScanner(true);
+  };
+
+  const handlePaymentInitiate = async (gateway) => {
+    try {
+      setProcessingPayment(true);
+      const response = await initiatePayment({
+        session_id: session.id,
+        gateway: gateway
+      });
+      
+      // Handle both nested and flat response structures
+      const paymentData = response.data || response;
+      
+      if (paymentData.payment_url) {
+        window.location.href = paymentData.payment_url;
+      } else {
+        toast.error('Failed to get payment URL');
+      }
+    } catch (error) {
+      console.error('Payment initiation error:', error);
+      toast.error(error.response?.data?.message || 'Payment initiation failed');
+    } finally {
+      setProcessingPayment(false);
+      setShowPaymentModal(false);
+    }
   };
 
   if (loading) {
@@ -179,7 +207,10 @@ const SessionDetail = () => {
                 <span className="text-2xl font-black text-white">${session.payment_amount}</span>
               </div>
               {!session.registration_status && (
-                <button className="w-full bg-premium-accent text-dark font-black py-4 rounded-2xl shadow-lg shadow-premium-accent/10 hover:scale-[1.02] transition-all">
+                <button 
+                  onClick={() => setShowPaymentModal(true)}
+                  className="w-full bg-premium-accent text-dark font-black py-4 rounded-2xl shadow-lg shadow-premium-accent/10 hover:scale-[1.02] transition-all"
+                >
                   Pay & Register
                 </button>
               )}
@@ -215,6 +246,67 @@ const SessionDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <div className="w-full max-w-md bg-dark border border-white/10 rounded-3xl p-8 relative">
+            <button 
+              onClick={() => setShowPaymentModal(false)}
+              className="absolute top-4 right-4 text-white/40 hover:text-white"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <h2 className="text-2xl font-bold text-white mb-6">Select Payment Method</h2>
+            
+            <div className="space-y-4">
+              <button
+                disabled={processingPayment}
+                onClick={() => handlePaymentInitiate('sslcommerz')}
+                className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-premium-primary/50 transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500">
+                    💳
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-white">SSLCommerz</p>
+                    <p className="text-xs text-white/40">Cards, Mobile Banking</p>
+                  </div>
+                </div>
+                <span className="text-white/20 group-hover:text-white transition-colors">→</span>
+              </button>
+
+              <button
+                disabled={processingPayment}
+                onClick={() => handlePaymentInitiate('stripe')}
+                className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-premium-primary/50 transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500">
+                    S
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-white">Stripe</p>
+                    <p className="text-xs text-white/40">Credit/Debit Cards</p>
+                  </div>
+                </div>
+                <span className="text-white/20 group-hover:text-white transition-colors">→</span>
+              </button>
+            </div>
+
+            {processingPayment && (
+              <div className="mt-6 text-center text-white/60 flex items-center justify-center gap-2">
+                <div className="animate-spin h-4 w-4 border-2 border-white/20 border-t-white rounded-full"></div>
+                <span>Processing secure payment...</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
