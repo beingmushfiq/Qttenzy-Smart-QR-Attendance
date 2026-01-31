@@ -5,20 +5,7 @@
   "framework": "vite",
   "installCommand": "cd frontend && npm install",
   "devCommand": "cd frontend && npm run dev",
-  "env": {
-    "VITE_API_BASE_URL": {
-      "description": "Backend API URL (e.g., https://your-backend.railway.app/api/v1)",
-      "value": ""
-    },
-    "VITE_APP_NAME": {
-      "description": "Application name",
-      "value": "Qttenzy"
-    },
-    "VITE_FACE_API_MODELS_PATH": {
-      "description": "Path to face-api models",
-      "value": "/models"
-    }
-  },
+
   "routes": [
     {
       "src": "/assets/(.*)",
