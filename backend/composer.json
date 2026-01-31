@@ -15,6 +15,7 @@
     "spatie/laravel-permission": "^6.0",
     "stripe/stripe-php": "^19.2",
     "symfony/clock": "7.0",
+    "symfony/css-selector": "7.0",
     "symfony/event-dispatcher": "7.0",
     "symfony/string": "7.0",
     "symfony/translation": "7.0",
