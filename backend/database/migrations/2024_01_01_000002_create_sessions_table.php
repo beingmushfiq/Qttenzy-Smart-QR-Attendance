@@ -30,7 +30,9 @@ return new class extends Migration
             $table->index('start_time');
             $table->index('created_by');
             $table->index(['location_lat', 'location_lng']);
-            $table->fullText(['title', 'description']);
+            // Fulltext index removed - not supported by PostgreSQL
+            // Use regular indexes on title for basic search functionality
+            $table->index('title');
         });
     }
 
