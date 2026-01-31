@@ -32,7 +32,7 @@ if (fs.existsSync(envPath)) {
 }
 
 const REQUIRED_VARS = [
-  'VITE_API_BASE_URL'
+  // 'VITE_API_BASE_URL' // Removed strict check as we have a default in vite.config.js
 ];
 
 console.log('🔍 Checking environment variables...');
