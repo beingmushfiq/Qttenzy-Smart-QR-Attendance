@@ -7,14 +7,14 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL || 'http://qttenzy.railway.internal/api/v1')
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL || 'http://qttenzy.up.railway.app/api/v1')
     },
     server: {
-      port: 5173,
+      port: 8080,
       host: true,
       proxy: {
         '/api': {
-          target: 'http://qttenzy.railway.internal',
+          target: 'http://qttenzy.up.railway.app',
           changeOrigin: true,
           secure: false
         }
