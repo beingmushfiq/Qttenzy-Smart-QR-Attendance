@@ -48,33 +48,39 @@ class FraudScenarioSeeder extends Seeder
 
         // Fraud Scenario 1: Location Spoofing (GPS coordinates far from venue)
         $fraudStudent1 = $students->first();
-        $attendance1 = Attendance::create([
-            'user_id' => $fraudStudent1->id,
-            'session_id' => $activeSession->id,
-            'qr_code_id' => $qrCode?->id,
-            'verified_at' => $activeSession->start_time->copy()->addMinutes(5),
-            'face_match_score' => 0.82,
-            'face_match' => true,
-            'gps_valid' => false, // GPS validation failed
-            'location_lat' => 23.8103, // Far from venue (different area of Dhaka)
-            'location_lng' => 90.4125,
-            'distance_from_venue' => 8500, // 8.5 km away
-            'ip_address' => '103.92.84.' . rand(1, 254),
-            'device_info' => [
-                'platform' => 'Android',
-                'browser' => 'Chrome',
-                'version' => '120.0',
-                'suspicious' => true
+        // Fraud Scenario 1: Location Spoofing (GPS coordinates far from venue)
+        $fraudStudent1 = $students->first();
+        $attendance1 = Attendance::updateOrCreate(
+            [
+                'user_id' => $fraudStudent1->id,
+                'session_id' => $activeSession->id,
             ],
-            'webauthn_used' => false,
-            'verification_method' => 'qr_face_gps',
-            'status' => 'rejected',
-            'entry_type' => 'entry',
-            'approved_by' => $admin?->id,
-            'approved_at' => now(),
-            'rejection_reason' => 'Location spoofing detected - GPS coordinates too far from venue',
-            'admin_notes' => 'Automatic rejection: Distance from venue exceeds threshold (8.5km vs 100m allowed)',
-        ]);
+            [
+                'qr_code_id' => $qrCode?->id,
+                'verified_at' => $activeSession->start_time->copy()->addMinutes(5),
+                'face_match_score' => 0.82,
+                'face_match' => true,
+                'gps_valid' => false, // GPS validation failed
+                'location_lat' => 23.8103, // Far from venue (different area of Dhaka)
+                'location_lng' => 90.4125,
+                'distance_from_venue' => 8500, // 8.5 km away
+                'ip_address' => '103.92.84.' . rand(1, 254),
+                'device_info' => [
+                    'platform' => 'Android',
+                    'browser' => 'Chrome',
+                    'version' => '120.0',
+                    'suspicious' => true
+                ],
+                'webauthn_used' => false,
+                'verification_method' => 'qr_face_gps',
+                'status' => 'rejected',
+                'entry_type' => 'entry',
+                'approved_by' => $admin?->id,
+                'approved_at' => now(),
+                'rejection_reason' => 'Location spoofing detected - GPS coordinates too far from venue',
+                'admin_notes' => 'Automatic rejection: Distance from venue exceeds threshold (8.5km vs 100m allowed)',
+            ]
+        );
 
         // Log fraud attempt
         AuditLog::log(
@@ -92,32 +98,38 @@ class FraudScenarioSeeder extends Seeder
 
         // Fraud Scenario 2: Face Mismatch (low confidence score)
         $fraudStudent2 = $students->skip(1)->first();
-        $attendance2 = Attendance::create([
-            'user_id' => $fraudStudent2->id,
-            'session_id' => $activeSession->id,
-            'qr_code_id' => $qrCode?->id,
-            'verified_at' => $activeSession->start_time->copy()->addMinutes(8),
-            'face_match_score' => 0.45, // Very low confidence
-            'face_match' => false, // Face verification failed
-            'gps_valid' => true,
-            'location_lat' => $activeSession->location_lat + (rand(-3, 3) / 10000),
-            'location_lng' => $activeSession->location_lng + (rand(-3, 3) / 10000),
-            'distance_from_venue' => 45,
-            'ip_address' => '192.168.1.' . rand(1, 254),
-            'device_info' => [
-                'platform' => 'Android',
-                'browser' => 'Chrome',
-                'version' => '120.0'
+        // Fraud Scenario 2: Face Mismatch (low confidence score)
+        $fraudStudent2 = $students->skip(1)->first();
+        $attendance2 = Attendance::updateOrCreate(
+            [
+                'user_id' => $fraudStudent2->id,
+                'session_id' => $activeSession->id,
             ],
-            'webauthn_used' => false,
-            'verification_method' => 'qr_face_gps',
-            'status' => 'rejected',
-            'entry_type' => 'entry',
-            'approved_by' => $admin?->id,
-            'approved_at' => now(),
-            'rejection_reason' => 'Face verification failed - confidence score too low (45%)',
-            'admin_notes' => 'Possible impersonation attempt - face match score below threshold',
-        ]);
+            [
+                'qr_code_id' => $qrCode?->id,
+                'verified_at' => $activeSession->start_time->copy()->addMinutes(8),
+                'face_match_score' => 0.45, // Very low confidence
+                'face_match' => false, // Face verification failed
+                'gps_valid' => true,
+                'location_lat' => $activeSession->location_lat + (rand(-3, 3) / 10000),
+                'location_lng' => $activeSession->location_lng + (rand(-3, 3) / 10000),
+                'distance_from_venue' => 45,
+                'ip_address' => '192.168.1.' . rand(1, 254),
+                'device_info' => [
+                    'platform' => 'Android',
+                    'browser' => 'Chrome',
+                    'version' => '120.0'
+                ],
+                'webauthn_used' => false,
+                'verification_method' => 'qr_face_gps',
+                'status' => 'rejected',
+                'entry_type' => 'entry',
+                'approved_by' => $admin?->id,
+                'approved_at' => now(),
+                'rejection_reason' => 'Face verification failed - confidence score too low (45%)',
+                'admin_notes' => 'Possible impersonation attempt - face match score below threshold',
+            ]
+        );
 
         // Log fraud attempt
         AuditLog::log(
@@ -137,28 +149,36 @@ class FraudScenarioSeeder extends Seeder
         $fraudStudent3 = $students->skip(2)->first();
         
         // First successful attendance
-        $attendance3a = Attendance::create([
-            'user_id' => $fraudStudent3->id,
-            'session_id' => $activeSession->id,
-            'qr_code_id' => $qrCode?->id,
-            'verified_at' => $activeSession->start_time->copy()->addMinutes(2),
-            'face_match_score' => 0.88,
-            'face_match' => true,
-            'gps_valid' => true,
-            'location_lat' => $activeSession->location_lat + (rand(-2, 2) / 10000),
-            'location_lng' => $activeSession->location_lng + (rand(-2, 2) / 10000),
-            'distance_from_venue' => 35,
-            'ip_address' => '192.168.1.100',
-            'device_info' => [
-                'platform' => 'iOS',
-                'browser' => 'Safari',
-                'version' => '17.0'
+        // Fraud Scenario 3: Duplicate Attendance Attempt
+        $fraudStudent3 = $students->skip(2)->first();
+        
+        // First successful attendance
+        $attendance3a = Attendance::updateOrCreate(
+            [
+                'user_id' => $fraudStudent3->id,
+                'session_id' => $activeSession->id,
             ],
-            'webauthn_used' => false,
-            'verification_method' => 'qr_face_gps',
-            'status' => 'present',
-            'entry_type' => 'entry',
-        ]);
+            [
+                'qr_code_id' => $qrCode?->id,
+                'verified_at' => $activeSession->start_time->copy()->addMinutes(2),
+                'face_match_score' => 0.88,
+                'face_match' => true,
+                'gps_valid' => true,
+                'location_lat' => $activeSession->location_lat + (rand(-2, 2) / 10000),
+                'location_lng' => $activeSession->location_lng + (rand(-2, 2) / 10000),
+                'distance_from_venue' => 35,
+                'ip_address' => '192.168.1.100',
+                'device_info' => [
+                    'platform' => 'iOS',
+                    'browser' => 'Safari',
+                    'version' => '17.0'
+                ],
+                'webauthn_used' => false,
+                'verification_method' => 'qr_face_gps',
+                'status' => 'present',
+                'entry_type' => 'entry',
+            ]
+        );
 
         // Second attempt (duplicate) - should be rejected
         // Note: In production, this would be prevented by unique constraint
@@ -178,30 +198,36 @@ class FraudScenarioSeeder extends Seeder
 
         // Fraud Scenario 4: Suspicious IP Address Pattern
         $fraudStudent4 = $students->skip(3)->first();
-        $attendance4 = Attendance::create([
-            'user_id' => $fraudStudent4->id,
-            'session_id' => $activeSession->id,
-            'qr_code_id' => $qrCode?->id,
-            'verified_at' => $activeSession->start_time->copy()->addMinutes(12),
-            'face_match_score' => 0.75,
-            'face_match' => true,
-            'gps_valid' => true,
-            'location_lat' => $activeSession->location_lat + (rand(-4, 4) / 10000),
-            'location_lng' => $activeSession->location_lng + (rand(-4, 4) / 10000),
-            'distance_from_venue' => 65,
-            'ip_address' => '10.0.0.1', // VPN/Proxy IP
-            'device_info' => [
-                'platform' => 'Android',
-                'browser' => 'Chrome',
-                'version' => '120.0',
-                'vpn_detected' => true
+        // Fraud Scenario 4: Suspicious IP Address Pattern
+        $fraudStudent4 = $students->skip(3)->first();
+        $attendance4 = Attendance::updateOrCreate(
+            [
+                'user_id' => $fraudStudent4->id,
+                'session_id' => $activeSession->id,
             ],
-            'webauthn_used' => false,
-            'verification_method' => 'qr_face_gps',
-            'status' => 'pending',
-            'entry_type' => 'entry',
-            'admin_notes' => 'Flagged for review - VPN/Proxy detected',
-        ]);
+            [
+                'qr_code_id' => $qrCode?->id,
+                'verified_at' => $activeSession->start_time->copy()->addMinutes(12),
+                'face_match_score' => 0.75,
+                'face_match' => true,
+                'gps_valid' => true,
+                'location_lat' => $activeSession->location_lat + (rand(-4, 4) / 10000),
+                'location_lng' => $activeSession->location_lng + (rand(-4, 4) / 10000),
+                'distance_from_venue' => 65,
+                'ip_address' => '10.0.0.1', // VPN/Proxy IP
+                'device_info' => [
+                    'platform' => 'Android',
+                    'browser' => 'Chrome',
+                    'version' => '120.0',
+                    'vpn_detected' => true
+                ],
+                'webauthn_used' => false,
+                'verification_method' => 'qr_face_gps',
+                'status' => 'pending',
+                'entry_type' => 'entry',
+                'admin_notes' => 'Flagged for review - VPN/Proxy detected',
+            ]
+        );
 
         // Log suspicious activity
         AuditLog::log(

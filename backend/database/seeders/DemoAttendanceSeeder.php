@@ -87,35 +87,39 @@ class DemoAttendanceSeeder extends Seeder
                 $status = 'rejected';
             }
 
-            $attendance = Attendance::create([
-                'user_id' => $student->id,
-                'session_id' => $completedSession->id,
-                'qr_code_id' => $completedSession->qrCodes()->first()?->id,
-                'verified_at' => $verifiedAt,
-                'face_match_score' => $faceMatchScore,
-                'face_match' => $faceMatchScore >= 0.7,
-                'gps_valid' => $gpsValid,
-                'location_lat' => $completedSession->location_lat + (rand(-10, 10) / 10000),
-                'location_lng' => $completedSession->location_lng + (rand(-10, 10) / 10000),
-                'distance_from_venue' => $distance,
-                'ip_address' => '192.168.1.' . rand(1, 254),
-                'device_info' => [
-                    'platform' => 'Android',
-                    'browser' => 'Chrome',
-                    'version' => '120.0'
+            $attendance = Attendance::updateOrCreate(
+                [
+                    'user_id' => $student->id,
+                    'session_id' => $completedSession->id,
                 ],
-                'webauthn_used' => false,
-                'verification_method' => 'qr_face_gps',
-                'status' => $status,
-                'entry_type' => 'entry',
-                'approved_by' => in_array($status, ['late', 'rejected']) ? $admin->id : null,
-                'approved_at' => in_array($status, ['late', 'rejected']) ? $verifiedAt->copy()->addMinutes(5) : null,
-                'admin_notes' => $status === 'rejected' ? 'Too late for attendance' : null,
-                'rejection_reason' => $status === 'rejected' ? 'Arrived more than 1 hour late' : null,
-            ]);
+                [
+                    'qr_code_id' => $completedSession->qrCodes()->first()?->id,
+                    'verified_at' => $verifiedAt,
+                    'face_match_score' => $faceMatchScore,
+                    'face_match' => $faceMatchScore >= 0.7,
+                    'gps_valid' => $gpsValid,
+                    'location_lat' => $completedSession->location_lat + (rand(-10, 10) / 10000),
+                    'location_lng' => $completedSession->location_lng + (rand(-10, 10) / 10000),
+                    'distance_from_venue' => $distance,
+                    'ip_address' => '192.168.1.' . rand(1, 254),
+                    'device_info' => [
+                        'platform' => 'Android',
+                        'browser' => 'Chrome',
+                        'version' => '120.0'
+                    ],
+                    'webauthn_used' => false,
+                    'verification_method' => 'qr_face_gps',
+                    'status' => $status,
+                    'entry_type' => 'entry',
+                    'approved_by' => in_array($status, ['late', 'rejected']) ? $admin->id : null,
+                    'approved_at' => in_array($status, ['late', 'rejected']) ? $verifiedAt->copy()->addMinutes(5) : null,
+                    'admin_notes' => $status === 'rejected' ? 'Too late for attendance' : null,
+                    'rejection_reason' => $status === 'rejected' ? 'Arrived more than 1 hour late' : null,
+                ]
+            );
 
-            // Create attendance log
-            if (in_array($status, ['late', 'rejected'])) {
+            // Create attendance log (only if newly created)
+            if ($attendance->wasRecentlyCreated && in_array($status, ['late', 'rejected'])) {
                 AttendanceLog::logChange(
                     $attendance,
                     $status === 'rejected' ? 'rejected' : 'approved',
@@ -136,28 +140,32 @@ class DemoAttendanceSeeder extends Seeder
             $verifiedAt = $activeSession->start_time->copy()->addMinutes(rand(-10, 20));
             $status = $verifiedAt->lte($activeSession->getLateThresholdTime()) ? 'present' : 'late';
             
-            $attendance = Attendance::create([
-                'user_id' => $student->id,
-                'session_id' => $activeSession->id,
-                'qr_code_id' => $qrCode->id,
-                'verified_at' => $verifiedAt,
-                'face_match_score' => rand(70, 99) / 100,
-                'face_match' => true,
-                'gps_valid' => true,
-                'location_lat' => $activeSession->location_lat + (rand(-5, 5) / 10000),
-                'location_lng' => $activeSession->location_lng + (rand(-5, 5) / 10000),
-                'distance_from_venue' => rand(10, 80),
-                'ip_address' => '192.168.1.' . rand(1, 254),
-                'device_info' => [
-                    'platform' => rand(0, 1) ? 'Android' : 'iOS',
-                    'browser' => 'Mobile Safari',
-                    'version' => '17.0'
+            $attendance = Attendance::updateOrCreate(
+                [
+                    'user_id' => $student->id,
+                    'session_id' => $activeSession->id,
                 ],
-                'webauthn_used' => false,
-                'verification_method' => 'qr_face_gps',
-                'status' => $status,
-                'entry_type' => 'entry',
-            ]);
+                [
+                    'qr_code_id' => $qrCode->id,
+                    'verified_at' => $verifiedAt,
+                    'face_match_score' => rand(70, 99) / 100,
+                    'face_match' => true,
+                    'gps_valid' => true,
+                    'location_lat' => $activeSession->location_lat + (rand(-5, 5) / 10000),
+                    'location_lng' => $activeSession->location_lng + (rand(-5, 5) / 10000),
+                    'distance_from_venue' => rand(10, 80),
+                    'ip_address' => '192.168.1.' . rand(1, 254),
+                    'device_info' => [
+                        'platform' => rand(0, 1) ? 'Android' : 'iOS',
+                        'browser' => 'Mobile Safari',
+                        'version' => '17.0'
+                    ],
+                    'webauthn_used' => false,
+                    'verification_method' => 'qr_face_gps',
+                    'status' => $status,
+                    'entry_type' => 'entry',
+                ]
+            );
         }
 
         // Update active session attendance count
@@ -169,29 +177,33 @@ class DemoAttendanceSeeder extends Seeder
         foreach ($pendingStudents as $student) {
             $verifiedAt = $activeSession->start_time->copy()->addMinutes(rand(20, 40));
             
-            Attendance::create([
-                'user_id' => $student->id,
-                'session_id' => $activeSession->id,
-                'qr_code_id' => $qrCode->id,
-                'verified_at' => $verifiedAt,
-                'face_match_score' => rand(65, 75) / 100,
-                'face_match' => true,
-                'gps_valid' => true,
-                'location_lat' => $activeSession->location_lat + (rand(-8, 8) / 10000),
-                'location_lng' => $activeSession->location_lng + (rand(-8, 8) / 10000),
-                'distance_from_venue' => rand(50, 95),
-                'ip_address' => '192.168.1.' . rand(1, 254),
-                'device_info' => [
-                    'platform' => 'Android',
-                    'browser' => 'Chrome',
-                    'version' => '120.0'
+            Attendance::updateOrCreate(
+                [
+                    'user_id' => $student->id,
+                    'session_id' => $activeSession->id,
                 ],
-                'webauthn_used' => false,
-                'verification_method' => 'qr_face_gps',
-                'status' => 'pending',
-                'entry_type' => 'entry',
-                'admin_notes' => null,
-            ]);
+                [
+                    'qr_code_id' => $qrCode->id,
+                    'verified_at' => $verifiedAt,
+                    'face_match_score' => rand(65, 75) / 100,
+                    'face_match' => true,
+                    'gps_valid' => true,
+                    'location_lat' => $activeSession->location_lat + (rand(-8, 8) / 10000),
+                    'location_lng' => $activeSession->location_lng + (rand(-8, 8) / 10000),
+                    'distance_from_venue' => rand(50, 95),
+                    'ip_address' => '192.168.1.' . rand(1, 254),
+                    'device_info' => [
+                        'platform' => 'Android',
+                        'browser' => 'Chrome',
+                        'version' => '120.0'
+                    ],
+                    'webauthn_used' => false,
+                    'verification_method' => 'qr_face_gps',
+                    'status' => 'pending',
+                    'entry_type' => 'entry',
+                    'admin_notes' => null,
+                ]
+            );
         }
 
         $this->command->info('✓ Demo attendance records seeded successfully!');
