@@ -188,7 +188,7 @@ class DemoUserSeeder extends Seeder
                         $this->command->info("Created student object. ID: " . $studentId);
                     }
                 } catch (\Throwable $e) {
-                    dd("CAUGHT EXCEPTION CREATING STUDENT {$email}: " . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::error("Failed to create student {$email}: " . $e->getMessage());
                 }
             }
             
@@ -202,7 +202,7 @@ class DemoUserSeeder extends Seeder
                         $student->roles()->attach($studentRole->id);
                      } catch (\Throwable $e) {
                          $this->command->warn("Failed to assign role to {$student->email}: " . $e->getMessage());
-                         dd("CAUGHT EXCEPTION ASSIGNING ROLE {$student->email}: " . $e->getMessage());
+                         \Illuminate\Support\Facades\Log::warning("Failed to assign role to {$student->email}: " . $e->getMessage());
                      }
                 }
             }
@@ -247,7 +247,7 @@ class DemoUserSeeder extends Seeder
         } catch (\Throwable $e) {
             $msg = "GLOBAL CATCH: " . $e->getMessage();
             $msg .= "\nTrace: " . $e->getTraceAsString();
-            file_put_contents('C:\Users\Aayan\Desktop\Qttenzy\backend\seed_catch_verify.txt', $msg);
+            \Illuminate\Support\Facades\Log::error("Seeder Failed: " . $msg);
             throw $e;
         }
     }

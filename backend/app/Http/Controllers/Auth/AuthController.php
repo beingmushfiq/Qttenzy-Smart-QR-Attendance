@@ -40,16 +40,16 @@ class AuthController extends Controller
 
         // Check if role requires admin creation
         // Allow 'organization_admin' only if they are creating a NEW organization
-        $restrictedRoles = ['admin', 'teacher', 'session_manager'];
+        $restrictedRoles = ['admin'];
         $requestedRole = $request->role ?? 'student';
         $isCreatingOrg = $request->boolean('create_organization');
 
         if (in_array($requestedRole, $restrictedRoles)) {
-            // Only admins can create admin/teacher/session_manager accounts directly
+            // Only admins can create admin accounts directly
             if (!auth()->check() || !auth()->user()->isAdmin()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only administrators can create admin or teacher accounts.'
+                    'message' => 'Only administrators can create global admin accounts.'
                 ], 403);
             }
         }
@@ -90,9 +90,22 @@ class AuthController extends Controller
             }
 
             // Determine if approval is required
-            // Organization Admins creating their own org shouldn't need approval usually, or maybe they do?
-            // Let's assume self-created org admins are auto-approved for now to reduce friction, or depend on strict mode.
-            $requiresApproval = $request->input('requires_approval', false);
+            // Roles that require explicit approval
+            $privilegedRoles = ['teacher', 'session_manager', 'event_manager', 'coordinator'];
+            
+            // If requesting a privileged role, force approval required (unless created by an admin)
+            if (in_array($requestedRole, $privilegedRoles)) {
+                // If the creator is NOT an admin/org_admin, they need approval
+                 if (!auth()->check() || (!auth()->user()->isAdmin() && !auth()->user()->hasRole('organization_admin'))) {
+                    $requiresApproval = true;
+                 } else {
+                    // Created by admin, respect input or default to false
+                    $requiresApproval = $request->input('requires_approval', false);
+                 }
+            } else {
+                // For students/others, respect input or default to false
+                $requiresApproval = $request->input('requires_approval', false);
+            }
             
             // Create user
             $user = User::create([

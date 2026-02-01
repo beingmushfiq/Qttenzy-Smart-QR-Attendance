@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
       host: true,
       proxy: {
         '/api': {
-          target: 'https://qttenzy.up.railway.app',
+          target: 'http://localhost:8000',
           changeOrigin: true,
           secure: false
         }

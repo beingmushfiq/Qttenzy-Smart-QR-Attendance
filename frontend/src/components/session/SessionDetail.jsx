@@ -214,6 +214,10 @@ const SessionDetail = () => {
                   Pay & Register
                 </button>
               )}
+              {/* DEBUG INFO - TO BE REMOVED */}
+               <div className="mt-2 p-2 bg-black/50 text-[10px] font-mono text-white/50">
+                 Status: {JSON.stringify(session.registration_status)} | Payment: {JSON.stringify(session.requires_payment)}
+               </div>
             </GlassCard>
           )}
 

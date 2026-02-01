@@ -10,74 +10,65 @@ import apiClient from "./client";
  * Get all active organizations (public - for registration)
  */
 export const getOrganizations = async () => {
-  const response = await apiClient.get("/organizations");
-  return response.data;
+  return apiClient.get("/organizations");
 };
 
 /**
  * Get all organizations with filters (admin only)
  */
 export const getOrganizationsAdmin = async (params = {}) => {
-  const response = await apiClient.get("/admin/organizations", { params });
-  return response.data;
+  return apiClient.get("/admin/organizations", { params });
 };
 
 /**
  * Get a single organization by ID
  */
 export const getOrganization = async (id) => {
-  const response = await apiClient.get(`/admin/organizations/${id}`);
-  return response.data;
+  return apiClient.get(`/admin/organizations/${id}`);
 };
 
 /**
  * Create a new organization
  */
 export const createOrganization = async (data) => {
-  const response = await apiClient.post("/admin/organizations", data);
-  return response.data;
+  return apiClient.post("/admin/organizations", data);
 };
 
 /**
  * Update an organization
  */
 export const updateOrganization = async (id, data) => {
-  const response = await apiClient.put(`/admin/organizations/${id}`, data);
-  return response.data;
+  return apiClient.put(`/admin/organizations/${id}`, data);
 };
 
 /**
  * Delete an organization
  */
 export const deleteOrganization = async (id) => {
-  const response = await apiClient.delete(`/admin/organizations/${id}`);
-  return response.data;
+  return apiClient.delete(`/admin/organizations/${id}`);
 };
 
 /**
  * Restore a deleted organization
  */
 export const restoreOrganization = async (id) => {
-  const response = await apiClient.post(`/admin/organizations/${id}/restore`);
-  return response.data;
+  return apiClient.post(`/admin/organizations/${id}/restore`);
 };
 
 /**
  * Toggle organization active status
  */
 export const toggleOrganizationStatus = async (id) => {
-  const response = await apiClient.post(
+  return apiClient.post(
     `/admin/organizations/${id}/toggle-status`,
   );
-  return response.data;
 };
 
 /**
  * Get organization statistics
  */
 export const getOrganizationStatistics = async (id) => {
-  const response = await apiClient.get(`/admin/organizations/${id}/statistics`);
-  return response.data;
+  return apiClient.get(`/admin/organizations/${id}/statistics`);
 };
 
 export default {
