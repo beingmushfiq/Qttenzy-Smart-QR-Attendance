@@ -11,6 +11,22 @@ $get_real_env = function ($key, $default = null) {
     return $value;
 };
 
+// Parse DATABASE_URL if it exists (Common in Railway/Heroku)
+$db_url = env('DATABASE_URL');
+$db_config = [];
+if ($db_url) {
+    $parsed = parse_url($db_url);
+    if (isset($parsed['host'])) {
+        $db_config = [
+            'host'     => $parsed['host'],
+            'port'     => $parsed['port'] ?? 3306,
+            'database' => ltrim($parsed['path'] ?? 'laravel', '/'),
+            'username' => $parsed['user'] ?? 'root',
+            'password' => $parsed['pass'] ?? '',
+        ];
+    }
+}
+
 return [
 
     /*
@@ -57,11 +73,11 @@ return [
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL') ?: env('DB_URL'),
-            'host' => $get_real_env('MYSQLHOST', $get_real_env('DB_HOST', '127.0.0.1')),
-            'port' => $get_real_env('MYSQLPORT', $get_real_env('DB_PORT', '3306')),
-            'database' => $get_real_env('MYSQLDATABASE', $get_real_env('DB_DATABASE', 'laravel')),
-            'username' => $get_real_env('MYSQLUSER', $get_real_env('DB_USERNAME', 'root')),
-            'password' => $get_real_env('MYSQLPASSWORD', $get_real_env('DB_PASSWORD', '')),
+            'host' => $db_config['host'] ?? $get_real_env('MYSQLHOST', $get_real_env('DB_HOST', '127.0.0.1')),
+            'port' => $db_config['port'] ?? $get_real_env('MYSQLPORT', $get_real_env('DB_PORT', '3306')),
+            'database' => $db_config['database'] ?? $get_real_env('MYSQLDATABASE', $get_real_env('DB_DATABASE', 'laravel')),
+            'username' => $db_config['username'] ?? $get_real_env('MYSQLUSER', $get_real_env('DB_USERNAME', 'root')),
+            'password' => $db_config['password'] ?? $get_real_env('MYSQLPASSWORD', $get_real_env('DB_PASSWORD', '')),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
