@@ -78,7 +78,6 @@ const Register = () => {
             </h1>
           </div>
             <p className="text-white/60 font-medium text-sm sm:text-base mb-6">Join Qttenzy Smart Attendance</p>
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 relative z-10">
             
