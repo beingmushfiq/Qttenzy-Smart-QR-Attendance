@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { authAPI } from '../services/api/auth'
-import { getOrganizations } from '../services/api/organization'
-import { toast } from 'react-toastify'
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { authAPI } from '../services/api/auth';
+import { getOrganizations } from '../services/api/organization';
+import { toast } from 'react-toastify';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -15,54 +15,54 @@ const Register = () => {
     organization_id: '',
     role: 'student',
     create_organization: false
-  })
-  const [organizations, setOrganizations] = useState([])
-  const [loading, setLoading] = useState(false)
-  const navigate = useNavigate()
+  });
+  const [organizations, setOrganizations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch organizations for dropdown
     const fetchOrganizations = async () => {
       try {
-        const response = await getOrganizations()
+        const response = await getOrganizations();
         // API client already unwraps to { success, data }, so use response.data
-        console.log('Organizations response:', response)
-        setOrganizations(response.data || [])
+        console.log('Organizations response:', response);
+        setOrganizations(response.data || []);
       } catch (error) {
-        console.error('Failed to fetch organizations:', error)
-        toast.error('Failed to load organizations')
+        console.error('Failed to fetch organizations:', error);
+        toast.error('Failed to load organizations');
       }
-    }
-    fetchOrganizations()
-  }, [])
+    };
+    fetchOrganizations();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
-    })
-  }
+    });
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     
     if (formData.password !== formData.password_confirmation) {
-      toast.error('Passwords do not match')
-      return
+      toast.error('Passwords do not match');
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      await authAPI.register(formData)
-      toast.success('Registration successful! Please wait for admin approval.')
-      navigate('/login')
+      await authAPI.register(formData);
+      toast.success('Registration successful! Please wait for admin approval.');
+      navigate('/login');
     } catch (error) {
-      toast.error(error.message || 'Registration failed')
+      toast.error(error.message || 'Registration failed');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
@@ -77,7 +77,7 @@ const Register = () => {
               <span className="text-premium-primary">Account</span>
             </h1>
           </div>
-            <p className="text-white/60 font-medium text-sm sm:text-base mb-6">Join Qttenzy Smart Attendance</p>
+          <p className="text-white/60 font-medium text-sm sm:text-base mb-6">Join Qttenzy Smart Attendance</p>
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 relative z-10">
             
@@ -292,7 +292,7 @@ const Register = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;
