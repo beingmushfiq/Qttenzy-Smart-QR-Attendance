@@ -406,6 +406,7 @@ const Admin = () => {
       {/* Admin Routes */}
       <Routes>
         <Route index element={<AdminDashboard />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="attendances" element={<AdminAttendances />} />
         <Route path="reports" element={<AdminReports />} />
