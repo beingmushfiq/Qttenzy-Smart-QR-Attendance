@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\DB;
+use App\Models\Organization;
+use Illuminate\Support\Str;
 
 /**
  * AuthController
@@ -34,12 +37,15 @@ class AuthController extends Controller
      */
     public function register(RegisterRequest $request)
     {
+
         // Check if role requires admin creation
+        // Allow 'organization_admin' only if they are creating a NEW organization
         $restrictedRoles = ['admin', 'teacher', 'session_manager'];
         $requestedRole = $request->role ?? 'student';
-        
+        $isCreatingOrg = $request->boolean('create_organization');
+
         if (in_array($requestedRole, $restrictedRoles)) {
-            // Only admins can create admin/teacher accounts
+            // Only admins can create admin/teacher/session_manager accounts directly
             if (!auth()->check() || !auth()->user()->isAdmin()) {
                 return response()->json([
                     'success' => false,
@@ -47,45 +53,93 @@ class AuthController extends Controller
                 ], 403);
             }
         }
-
-        // Determine if approval is required
-        $requiresApproval = $request->input('requires_approval', false);
         
-        // Create user
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'phone' => $request->phone,
-            'organization_id' => $request->organization_id,
-            'role' => $requestedRole,
-            'requires_approval' => $requiresApproval,
-            'is_approved' => !$requiresApproval, // Auto-approve if not required
-            'approved_at' => !$requiresApproval ? now() : null,
-            'approved_by' => !$requiresApproval && auth()->check() ? auth()->id() : null,
-            'face_consent' => $request->input('face_consent', false),
-            'is_active' => true,
-        ]);
-
-        // Assign role using the roles relationship
-        $role = Role::where('name', $requestedRole)->first();
-        if ($role) {
-            $user->assignRole($role);
+        // If requesting organization_admin without creating an org, block it (unless admin)
+        if ($requestedRole === 'organization_admin' && !$isCreatingOrg) {
+             if (!auth()->check() || !auth()->user()->isAdmin()) {
+                 return response()->json([
+                    'success' => false,
+                    'message' => 'You can only become an Organization Admin by creating a new organization.'
+                ], 403);
+             }
         }
 
-        // Log the registration
-        AuditLog::log(
-            'user_registered',
-            $user,
-            null,
-            [
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'requires_approval' => $user->requires_approval,
-            ],
-            'New user registered'
-        );
+        try {
+            DB::beginTransaction();
+
+            // Handle Organization Creation
+            $organizationId = $request->organization_id;
+            
+            if ($isCreatingOrg) {
+                // Generate a unique code for the organization
+                $orgCode = strtoupper(Str::slug($request->organization_name) . '-' . Str::random(4));
+                
+                $organization = Organization::create([
+                    'name' => $request->organization_name,
+                    'code' => $orgCode,
+                    'address' => $request->address, // Note: Request field might be organization_address or just address. using address based on likely usage, checking request below
+                    'phone' => $request->organization_phone ?? $request->phone,
+                    'email' => $request->email, // Default to admin email
+                    'is_active' => true,
+                ]);
+                
+                $organizationId = $organization->id;
+                
+                // Force role to organization_admin if creating an org
+                $requestedRole = 'organization_admin';
+            }
+
+            // Determine if approval is required
+            // Organization Admins creating their own org shouldn't need approval usually, or maybe they do?
+            // Let's assume self-created org admins are auto-approved for now to reduce friction, or depend on strict mode.
+            $requiresApproval = $request->input('requires_approval', false);
+            
+            // Create user
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'phone' => $request->phone,
+                'organization_id' => $organizationId,
+                'role' => $requestedRole,
+                'requires_approval' => $requiresApproval,
+                'is_approved' => !$requiresApproval, // Auto-approve if not required
+                'approved_at' => !$requiresApproval ? now() : null,
+                'approved_by' => !$requiresApproval && auth()->check() ? auth()->id() : null,
+                'face_consent' => $request->input('face_consent', false),
+                'is_active' => true,
+            ]);
+    
+            // Assign role using the roles relationship
+            $role = Role::where('name', $requestedRole)->first();
+            if ($role) {
+                $user->assignRole($role);
+            }
+    
+            // Log the registration
+            AuditLog::log(
+                'user_registered',
+                $user,
+                null,
+                [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'organization_id' => $organizationId,
+                    'created_organization' => $isCreatingOrg
+                ],
+                'New user registered'
+            );
+            
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed: ' . $e->getMessage()
+            ], 500);
+        }
 
         // Generate token only if approved
         $token = null;

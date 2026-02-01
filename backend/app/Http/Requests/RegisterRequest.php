@@ -59,11 +59,33 @@ class RegisterRequest extends FormRequest
             'role' => [
                 'nullable',
                 'string',
-                'in:student,employee'
+                'in:student,employee,organization_admin'
             ],
             'organization_id' => [
                 'nullable',
+                'required_without:create_organization',
                 'exists:organizations,id'
+            ],
+            'create_organization' => [
+                'nullable',
+                'boolean'
+            ],
+            'organization_name' => [
+                'required_if:create_organization,true',
+                'nullable',
+                'string',
+                'max:255',
+                'unique:organizations,name'
+            ],
+            'organization_address' => [
+                'nullable',
+                'string',
+                'max:500'
+            ],
+            'organization_phone' => [
+                'nullable',
+                'string',
+                'max:20'
             ],
             'face_consent' => [
                 'nullable',
@@ -90,8 +112,11 @@ class RegisterRequest extends FormRequest
             'phone.regex' => 'Please provide a valid phone number (10-15 digits).',
             'password.required' => 'Password is required.',
             'password.confirmed' => 'Password confirmation does not match.',
-            'role.in' => 'Invalid role selected. Only student and employee roles are allowed for self-registration.',
+            'role.in' => 'Invalid role selected.',
             'organization_id.exists' => 'Selected organization does not exist.',
+            'organization_id.required_without' => 'Please select an organization or create a new one.',
+            'organization_name.required_if' => 'Organization name is required when creating a new organization.',
+            'organization_name.unique' => 'This organization name is already registered.',
         ];
     }
 

@@ -65,12 +65,14 @@ class DemoSessionSeeder extends Seeder
         );
 
         // Generate QR code for active session
-        QRCode::create([
-            'session_id' => $session1->id,
-            'code' => 'QR-' . strtoupper(bin2hex(random_bytes(8))),
-            'is_active' => true,
-            'expires_at' => $session1->end_time,
-        ]);
+        if ($session1->qrCodes()->doesntExist()) {
+            QRCode::create([
+                'session_id' => $session1->id,
+                'code' => 'QR-' . strtoupper(bin2hex(random_bytes(8))),
+                'is_active' => true,
+                'expires_at' => $session1->end_time,
+            ]);
+        }
 
         // Session 2: Upcoming session (BUET)
         $session2 = Session::updateOrCreate(

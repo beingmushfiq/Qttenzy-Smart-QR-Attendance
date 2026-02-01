@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sessionAPI } from '../../services/api/session';
 import { toast } from 'react-toastify';
+import Layout from '../common/Layout';
 
 const SessionCreate = () => {
   const navigate = useNavigate();
@@ -66,237 +67,260 @@ const SessionCreate = () => {
     }
   };
 
+  const inputClasses = "w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none";
+  const labelClasses = "block text-sm font-medium mb-2 text-white/80";
+
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Create Session</h1>
-          <button
-            onClick={() => navigate('/sessions')}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            ← Back
-          </button>
-        </div>
+    <Layout>
+      <div className="max-w-4xl mx-auto">
+        <div className="glass rounded-[2rem] p-8 border border-white/10 relative overflow-hidden">
+             {/* Decorative inner glow */}
+             <div className="absolute -top-24 -right-24 w-48 h-48 bg-premium-primary/20 blur-[60px]"></div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
-                  rows="4"
-                />
-              </div>
+          <div className="flex justify-between items-center mb-8 relative z-10">
+            <div>
+                <h1 className="text-3xl font-extrabold tracking-tight">
+                    <span className="text-white">Create </span>
+                    <span className="text-premium-primary">Session</span>
+                </h1>
+                <p className="text-white/60 mt-2">Set up a new attendance session</p>
             </div>
+            
+            <button
+              onClick={() => navigate('/sessions')}
+              className="text-white/60 hover:text-white px-4 py-2 rounded-xl hover:bg-white/10 transition-all"
+            >
+              ← Back to Sessions
+            </button>
           </div>
 
-          {/* Date & Time */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Date & Time</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Start Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  value={formData.start_time}
-                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  End Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  value={formData.end_time}
-                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Location */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Location</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Location Name</label>
-                <input
-                  type="text"
-                  value={formData.location_name}
-                  onChange={(e) => setFormData({ ...formData, location_name: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="e.g., Dhaka University"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
+            {/* Basic Information */}
+            <div className="space-y-5">
+              <h2 className="text-xl font-bold text-white border-b border-white/10 pb-2">Basic Information</h2>
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Latitude <span className="text-red-500">*</span>
+                  <label className={labelClasses}>
+                    Title <span className="text-premium-primary">*</span>
                   </label>
                   <input
-                    type="number"
-                    step="any"
-                    value={formData.location_lat}
-                    onChange={(e) => setFormData({ ...formData, location_lat: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className={inputClasses}
+                    placeholder="e.g. Introduction to Computer Science"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Longitude <span className="text-red-500">*</span>
+                  <label className={labelClasses}>Description</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className={inputClasses}
+                    rows="4"
+                    placeholder="Session details..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Date & Time */}
+            <div className="space-y-5">
+              <h2 className="text-xl font-bold text-white border-b border-white/10 pb-2">Date & Time</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className={labelClasses}>
+                    Start Time <span className="text-premium-primary">*</span>
                   </label>
                   <input
-                    type="number"
-                    step="any"
-                    value={formData.location_lng}
-                    onChange={(e) => setFormData({ ...formData, location_lng: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
+                    type="datetime-local"
+                    value={formData.start_time}
+                    onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                    className={inputClasses}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClasses}>
+                    End Time <span className="text-premium-primary">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.end_time}
+                    onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                    className={inputClasses}
                     required
                   />
                 </div>
               </div>
+            </div>
 
+            {/* Location */}
+            <div className="space-y-5">
+              <h2 className="text-xl font-bold text-white border-b border-white/10 pb-2">Location</h2>
+              <div className="space-y-5">
+                <div>
+                  <label className={labelClasses}>Location Name</label>
+                  <input
+                    type="text"
+                    value={formData.location_name}
+                    onChange={(e) => setFormData({ ...formData, location_name: e.target.value })}
+                    className={inputClasses}
+                    placeholder="e.g., Dhaka University"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className={labelClasses}>
+                      Latitude <span className="text-premium-primary">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={formData.location_lat}
+                      onChange={(e) => setFormData({ ...formData, location_lat: e.target.value })}
+                      className={inputClasses}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClasses}>
+                      Longitude <span className="text-premium-primary">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={formData.location_lng}
+                      onChange={(e) => setFormData({ ...formData, location_lng: e.target.value })}
+                      className={inputClasses}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGetCurrentLocation}
+                  className="text-sm text-premium-primary hover:text-premium-primary/80 font-semibold flex items-center gap-2"
+                >
+                  <span className="bg-premium-primary/20 p-2 rounded-lg">📍</span> 
+                  Get Current Location
+                </button>
+
+                <div>
+                  <label className={labelClasses}>
+                    Radius (meters)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.radius_meters}
+                    onChange={(e) => setFormData({ ...formData, radius_meters: e.target.value })}
+                    className={inputClasses}
+                    min="10"
+                    max="10000"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Session Settings */}
+            <div className="space-y-5">
+              <h2 className="text-xl font-bold text-white border-b border-white/10 pb-2">Start Settings</h2>
+              <div className="space-y-5">
+                <div>
+                  <label className={labelClasses}>
+                    Session Type <span className="text-premium-primary">*</span>
+                  </label>
+                  <select
+                    value={formData.session_type}
+                    onChange={(e) => setFormData({ ...formData, session_type: e.target.value })}
+                    className={inputClasses}
+                    required
+                  >
+                    <option value="open" className="bg-dark text-white">Open</option>
+                    <option value="pre_registered" className="bg-dark text-white">Pre-registered</option>
+                    <option value="admin_approved" className="bg-dark text-white">Admin Approved</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={labelClasses}>
+                    Max Attendees
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.max_attendees}
+                    onChange={(e) => setFormData({ ...formData, max_attendees: e.target.value })}
+                    className={inputClasses}
+                    min="1"
+                    placeholder="Unlimited"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
+                  <input
+                    type="checkbox"
+                    id="requires_payment"
+                    checked={formData.requires_payment}
+                    onChange={(e) => setFormData({ ...formData, requires_payment: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300 text-premium-primary focus:ring-premium-primary"
+                  />
+                  <label htmlFor="requires_payment" className="text-base font-medium text-white cursor-pointer select-none">
+                    Requires Payment to Join
+                  </label>
+                </div>
+
+                {formData.requires_payment && (
+                  <div className="animate-in fade-in slide-in-from-top-2">
+                    <label className={labelClasses}>
+                      Payment Amount <span className="text-premium-primary">*</span>
+                    </label>
+                    <div className="relative">
+                        <span className="absolute left-4 top-3.5 text-white/50">$</span>
+                        <input
+                            type="number"
+                            step="0.01"
+                            value={formData.payment_amount}
+                            onChange={(e) => setFormData({ ...formData, payment_amount: e.target.value })}
+                            className={`${inputClasses} pl-8`}
+                            min="0"
+                            required={formData.requires_payment}
+                        />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Submit Buttons */}
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 bg-gradient-premium text-white font-bold py-4 rounded-xl shadow-lg shadow-premium-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100"
+              >
+                {loading ? 'Creating Session...' : 'Create Session'}
+              </button>
               <button
                 type="button"
-                onClick={handleGetCurrentLocation}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                onClick={() => navigate('/sessions')}
+                className="px-8 py-4 rounded-xl bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all font-semibold"
               >
-                📍 Use Current Location
+                Cancel
               </button>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Radius (meters)
-                </label>
-                <input
-                  type="number"
-                  value={formData.radius_meters}
-                  onChange={(e) => setFormData({ ...formData, radius_meters: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
-                  min="10"
-                  max="10000"
-                />
-              </div>
             </div>
-          </div>
-
-          {/* Session Settings */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Session Settings</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Session Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.session_type}
-                  onChange={(e) => setFormData({ ...formData, session_type: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                >
-                  <option value="open">Open</option>
-                  <option value="pre_registered">Pre-registered</option>
-                  <option value="admin_approved">Admin Approved</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Max Attendees
-                </label>
-                <input
-                  type="number"
-                  value={formData.max_attendees}
-                  onChange={(e) => setFormData({ ...formData, max_attendees: e.target.value })}
-                  className="w-full border rounded px-3 py-2"
-                  min="1"
-                />
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="requires_payment"
-                  checked={formData.requires_payment}
-                  onChange={(e) => setFormData({ ...formData, requires_payment: e.target.checked })}
-                  className="mr-2"
-                />
-                <label htmlFor="requires_payment" className="text-sm font-medium">
-                  Requires Payment
-                </label>
-              </div>
-
-              {formData.requires_payment && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Payment Amount <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.payment_amount}
-                    onChange={(e) => setFormData({ ...formData, payment_amount: e.target.value })}
-                    className="w-full border rounded px-3 py-2"
-                    min="0"
-                    required={formData.requires_payment}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Submit Buttons */}
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? 'Creating...' : 'Create Session'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/sessions')}
-              className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
 export default SessionCreate;
+
 
