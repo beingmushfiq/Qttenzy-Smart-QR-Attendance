@@ -2,6 +2,15 @@
 
 use Illuminate\Support\Str;
 
+// Helper to avoid literal template strings like "${MYSQLHOST}"
+$get_real_env = function ($key, $default = null) {
+    $value = env($key, $default);
+    if (is_string($value) && str_starts_with($value, '${')) {
+        return $default;
+    }
+    return $value;
+};
+
 return [
 
     /*
@@ -48,11 +57,11 @@ return [
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL') ?: env('DB_URL'),
-            'host' => env('MYSQLHOST', env('DB_HOST', '127.0.0.1')),
-            'port' => env('MYSQLPORT', env('DB_PORT', '3306')),
-            'database' => env('MYSQLDATABASE', env('DB_DATABASE', 'laravel')),
-            'username' => env('MYSQLUSER', env('DB_USERNAME', 'root')),
-            'password' => env('MYSQLPASSWORD', env('DB_PASSWORD', '')),
+            'host' => $get_real_env('MYSQLHOST', $get_real_env('DB_HOST', '127.0.0.1')),
+            'port' => $get_real_env('MYSQLPORT', $get_real_env('DB_PORT', '3306')),
+            'database' => $get_real_env('MYSQLDATABASE', $get_real_env('DB_DATABASE', 'laravel')),
+            'username' => $get_real_env('MYSQLUSER', $get_real_env('DB_USERNAME', 'root')),
+            'password' => $get_real_env('MYSQLPASSWORD', $get_real_env('DB_PASSWORD', '')),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
