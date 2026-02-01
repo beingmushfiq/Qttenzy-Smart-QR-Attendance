@@ -129,6 +129,24 @@ class RolePermissionSeeder extends Seeder
             ]
         );
 
+        // Create Event Manager Role
+        $eventManagerRole = Role::firstOrCreate(
+            ['name' => 'event_manager'],
+            [
+                'display_name' => 'Event Manager',
+                'description' => 'Can optimize and oversee all session events'
+            ]
+        );
+
+        // Create Coordinator Role
+        $coordinatorRole = Role::firstOrCreate(
+            ['name' => 'coordinator'],
+            [
+                'display_name' => 'Coordinator',
+                'description' => 'Coordinate different sessions and activities'
+            ]
+        );
+
         // Assign Permissions to Student
         $studentPermissions = Permission::whereIn('name', [
             'view_sessions',
@@ -154,6 +172,31 @@ class RolePermissionSeeder extends Seeder
             'export_reports',
         ])->get();
         $orgAdminRole->permissions()->sync($orgAdminPermissions->pluck('id'));
+
+        // Assign Permissions to Event Manager
+        // Similar to session_manager but potentially more extensive
+        $eventManagerPermissions = Permission::whereIn('name', [
+            'view_sessions',
+            'create_sessions',
+            'edit_sessions',
+            'delete_sessions',
+            'generate_qr',
+            'view_attendance',
+            'approve_attendance',
+            'view_reports',
+        ])->get();
+        $eventManagerRole->permissions()->sync($eventManagerPermissions->pluck('id'));
+
+        // Assign Permissions to Coordinator
+        // Focused on coordination, maybe viewing and specific management
+        $coordinatorPermissions = Permission::whereIn('name', [
+            'view_sessions',
+            'generate_qr',
+            'view_attendance',
+            'mark_attendance', // Maybe they need to check in?
+            'approve_attendance', // Help with attendance approvals
+        ])->get();
+        $coordinatorRole->permissions()->sync($coordinatorPermissions->pluck('id'));
 
         $this->command->info('✓ Roles and permissions seeded successfully!');
     }

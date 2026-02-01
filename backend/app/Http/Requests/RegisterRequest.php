@@ -59,7 +59,7 @@ class RegisterRequest extends FormRequest
             'role' => [
                 'nullable',
                 'string',
-                'in:student,employee,organization_admin'
+                'in:student,employee,teacher,organization_admin,event_manager,coordinator'
             ],
             'organization_id' => [
                 'nullable',

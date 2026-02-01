@@ -232,6 +232,8 @@ const Register = () => {
                     >
                       <option value="student" className="bg-dark text-white">Student</option>
                       <option value="teacher" className="bg-dark text-white">Teacher</option>
+                      <option value="event_manager" className="bg-dark text-white">Event Manager</option>
+                      <option value="coordinator" className="bg-dark text-white">Co-ordinator</option>
                     </select>
                   </div>
               )}
