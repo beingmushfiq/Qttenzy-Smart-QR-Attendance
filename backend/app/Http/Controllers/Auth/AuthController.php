@@ -245,6 +245,9 @@ class AuthController extends Controller
             'User logged in successfully'
         );
 
+        // Load relationships
+        $user->load(['organization']);
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful',

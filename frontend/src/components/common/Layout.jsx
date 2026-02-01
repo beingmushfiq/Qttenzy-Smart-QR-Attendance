@@ -34,13 +34,18 @@ const Layout = ({ children }) => {
 
   const SidebarContent = () => (
     <div className={`flex flex-col h-full ${isCollapsed ? 'items-center px-4' : 'px-6 sm:px-8'} py-6 sm:py-8 transition-all duration-300`}>
-      <h1 className={`font-extrabold mb-8 sm:mb-10 tracking-tight transition-all duration-300 ${isCollapsed ? 'text-xl' : 'text-2xl sm:text-3xl'}`}>
-        {isCollapsed ? (
-          <span className="text-premium-primary">Qt</span>
-        ) : (
-          <>Qt<span className="text-premium-primary">tenzy</span></>
-        )}
-      </h1>
+      <Link 
+        to={user?.role === 'organization_admin' ? '/org-dashboard' : (user?.role === 'admin' ? '/admin/dashboard' : '/dashboard')} 
+        className={`block hover:scale-[1.02] transition-transform duration-200`}
+      >
+        <h1 className={`font-extrabold mb-8 sm:mb-10 tracking-tight transition-all duration-300 ${isCollapsed ? 'text-xl' : 'text-2xl sm:text-3xl'}`}>
+            {isCollapsed ? (
+            <span className="text-premium-primary">Qt</span>
+            ) : (
+            <>Qt<span className="text-premium-primary">tenzy</span></>
+            )}
+        </h1>
+      </Link>
       
       <nav className={`space-y-2 sm:space-y-3 w-full flex-1 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
         {navItems.map((item) => (
