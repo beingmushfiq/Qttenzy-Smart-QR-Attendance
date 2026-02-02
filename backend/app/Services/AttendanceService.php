@@ -259,13 +259,15 @@ class AttendanceService
         bool $faceMatch,
         bool $gpsValid
     ): string {
-        // If face or GPS failed, mark as rejected
-        if (!$faceMatch || !$gpsValid) {
-            return 'rejected';
+        // STRICT: All attendance is PENDING until approved by admin
+        // No auto-approval based on face/gps.
+        
+        // Exception: If an Admin is marking attendance (unlikely via this flow, but safe to add)
+        if (auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())) {
+            return 'present';
         }
 
-        // Use session's method to determine status based on time
-        return $session->determineAttendanceStatus($verifiedAt);
+        return 'pending';
     }
 
     /**

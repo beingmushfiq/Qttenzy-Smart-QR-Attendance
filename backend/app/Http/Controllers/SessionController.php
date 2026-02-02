@@ -225,13 +225,24 @@ class SessionController extends Controller
             ], 422);
         }
 
-        $session->update($request->only([
+        // Filter update data
+        $data = $request->only([
             'title', 'description', 'start_time', 'end_time',
             'location_lat', 'location_lng', 'location_name',
             'radius_meters', 'session_type', 'status',
             'requires_payment', 'payment_amount', 'max_attendees',
             'capacity', 'allow_entry_exit', 'late_threshold_minutes'
-        ]));
+        ]);
+
+        // STRICT: Only admins/super admins can change status to/from active/completed etc.
+        // If non-admin tries to change status, simple ignore it or force it to remain what it was unless it's a draft->draft update (which is fine)
+        if (isset($data['status']) && $data['status'] !== $session->status) {
+            if (!auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin()) {
+                unset($data['status']); // Prevent status change
+            }
+        }
+
+        $session->update($data);
 
         return response()->json([
             'success' => true,
