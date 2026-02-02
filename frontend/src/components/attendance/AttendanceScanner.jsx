@@ -9,9 +9,10 @@ import { userAPI } from '../../services/api/user';
 import { useAuthStore } from '../../store/authStore';
 import GlassCard from '../common/GlassCard';
 
-const AttendanceScanner = ({ sessionId }) => {
-  const [step, setStep] = useState('qr'); // qr -> face -> gps -> submit
+const AttendanceScanner = ({ sessionId: propSessionId, onClose, onSuccess }) => {
+  const [step, setStep] = useState('loading'); // loading -> face -> qr -> gps -> submit
   const [qrCode, setQrCode] = useState(null);
+  const [scannedSessionId, setScannedSessionId] = useState(propSessionId);
   const [faceResult, setFaceResult] = useState(null);
   const [enrolledDescriptor, setEnrolledDescriptor] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -20,34 +21,77 @@ const AttendanceScanner = ({ sessionId }) => {
   const { location, error: locationError, getCurrentLocation, loading: locationLoading } = useGeolocation();
 
   useEffect(() => {
-    const fetchEnrolledFace = async () => {
+    const checkEnrollment = async () => {
       try {
-        const response = await userAPI.getProfile();
+        // First check local storage for speed
         const storedDescriptor = localStorage.getItem('face_descriptor');
+        
         if (storedDescriptor) {
           setEnrolledDescriptor(JSON.parse(storedDescriptor));
+          setStep('face');
+        } else {
+          // If not in local, try fetching profile (maybe enrolled on another device)
+          const profile = await userAPI.getProfile();
+          if (profile.face_enrolled && profile.face_descriptor) {
+             const desc = JSON.parse(profile.face_descriptor);
+             // Cache it
+             localStorage.setItem('face_descriptor', JSON.stringify(desc));
+             setEnrolledDescriptor(desc);
+             setStep('face');
+          } else {
+            toast.warning('You must enroll your face first!');
+            navigate('/profile');
+          }
         }
       } catch (error) {
-        console.error('Failed to fetch enrolled face:', error);
+        console.error('Failed to fetch enrollment:', error);
+        toast.error('Could not verify enrollment status');
+        navigate('/profile');
       }
     };
-    fetchEnrolledFace();
-  }, []);
-
-  const handleQRScanned = (code) => {
-    setQrCode(code);
-    setStep('face');
-  };
+    checkEnrollment();
+  }, [navigate]);
 
   const handleFaceVerified = (result) => {
     setFaceResult(result);
     if (result.match) {
-      setStep('gps');
-      getCurrentLocation();
+      toast.success('Face Verified! Please scan the QR code.');
+      setStep('qr');
     }
   };
 
+  const handleQRScanned = (code) => {
+    // Expected format: SESSION_{ID}_{TIMESTAMP}_{RANDOM}
+    // Or just a raw string if legacy.
+    // Try to extract session ID if not provided via props
+    if (!scannedSessionId) {
+      const match = code.match(/^SESSION_(\d+)_/);
+      if (match && match[1]) {
+        setScannedSessionId(parseInt(match[1]));
+        console.log('Extracted Session ID:', match[1]);
+      } else {
+        // Fallback: If we can't extract ID and don't have prop, we can't proceed really.
+        // But maybe the backend can handle it if we send just code?
+        // AttendanceService expects session_id.
+        // We will proceed and hope backend validation handles it or user selected session (if we add selection later)
+        console.warn('Could not extract Session ID from QR');
+      }
+    }
+    
+    setQrCode(code);
+    setStep('gps');
+    getCurrentLocation();
+  };
+
   const handleSubmit = async () => {
+    const finalSessionId = scannedSessionId || propSessionId;
+
+    if (!finalSessionId) {
+      toast.error('Invalid QR Code: Could not identify session.');
+      setStep('qr'); // Retry scan
+      return;
+    }
+
     if (!qrCode || !faceResult || !location) {
       toast.error('Please complete all verification steps');
       return;
@@ -56,13 +100,12 @@ const AttendanceScanner = ({ sessionId }) => {
     setSubmitting(true);
     try {
       if (!enrolledDescriptor) {
-        toast.error('Face enrollment not found.');
-        setStep('face');
+        toast.error('Face enrollment missing.');
         return;
       }
 
       await attendanceAPI.verify({
-        session_id: sessionId,
+        session_id: finalSessionId,
         qr_code: qrCode,
         face_descriptor: enrolledDescriptor,
         location: {
@@ -72,26 +115,41 @@ const AttendanceScanner = ({ sessionId }) => {
         }
       });
 
-      toast.success('Attendance verified successfully!');
-      navigate('/attendance');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        toast.success('Attendance verified successfully!');
+        navigate('/attendance');
+      }
     } catch (error) {
       toast.error(error.message || 'Verification failed');
+      // If error, maybe go back to QR step? Or stay here?
+      // Stay on GPS step to allow retry submission
     } finally {
       setSubmitting(false);
     }
   };
 
   const steps = [
-    { id: 'qr', icon: '📱', label: 'Scan QR' },
     { id: 'face', icon: '👤', label: 'Face Auth' },
+    { id: 'qr', icon: '📱', label: 'Scan QR' },
     { id: 'gps', icon: '📍', label: 'Location' },
   ];
 
+  if (step === 'loading') {
+     return <div className="text-center p-10 text-white">Checking enrollment...</div>;
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-500 text-left">
-      <div className="text-center">
-        <h2 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Identity Verification</h2>
-        <p className="text-white/40 font-medium tracking-tight">Multi-factor biometric attendance check</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Identity Verification</h2>
+          <p className="text-white/40 font-medium tracking-tight">Multi-factor biometric attendance check</p>
+        </div>
+        <button onClick={onClose} className="text-white/40 hover:text-white px-4 py-2">
+          Cancel
+        </button>
       </div>
 
       <GlassCard className="border border-white/10 relative overflow-hidden">
@@ -122,20 +180,29 @@ const AttendanceScanner = ({ sessionId }) => {
           })}
         </div>
 
-        <div className="relative z-10">
-          {step === 'qr' && (
-            <div className="animate-in fade-in duration-500">
-              <QRScanner onScan={handleQRScanned} onClose={() => navigate('/sessions')} />
-            </div>
-          )}
-
+        <div className="relative z-10 min-h-[300px]">
           {step === 'face' && enrolledDescriptor && (
             <div className="animate-in fade-in duration-500">
+               <div className="text-center mb-4">
+                 <p className="text-white font-bold">Verify your identity</p>
+                 <p className="text-white/40 text-sm">Look at the camera to unlock QR scanner</p>
+               </div>
               <FaceVerification
                 enrolledDescriptor={enrolledDescriptor}
                 onVerify={handleFaceVerified}
-                onClose={() => setStep('qr')}
+                onClose={onClose}
               />
+            </div>
+          )}
+
+          {step === 'qr' && (
+            <div className="animate-in fade-in duration-500">
+              <div className="text-center mb-4">
+                 <p className="text-white font-bold">Scan Session QR</p>
+                 <p className="text-white/40 text-sm">Face verified. Now scan the class code.</p>
+               </div>
+              <QRScanner onScan={handleQRScanned} onClose={onClose} />
+              {/* Back button needed in QRScanner? onClose passed handles it */}
             </div>
           )}
 
@@ -163,6 +230,7 @@ const AttendanceScanner = ({ sessionId }) => {
                   <div className="p-6 rounded-3xl bg-premium-accent/5 border border-premium-accent/10">
                     <p className="text-premium-accent font-black uppercase tracking-widest text-xs mb-1">Position Locked</p>
                     <p className="text-white font-bold tracking-tight">Accuracy: {location.accuracy?.toFixed(0)}m</p>
+                    {scannedSessionId && <p className="text-white/40 text-xs mt-2">Session ID: {scannedSessionId}</p>}
                   </div>
                   <button
                     onClick={handleSubmit}
