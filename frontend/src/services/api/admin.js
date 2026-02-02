@@ -16,7 +16,7 @@ export const adminAPI = {
   },
 
   deleteUser: async (userId) => {
-    return apiClient.delete(`/admin/users/${userId}`)
+    return apiClient.delete(`/users/${userId}`)
   },
 
   // Attendance Management
