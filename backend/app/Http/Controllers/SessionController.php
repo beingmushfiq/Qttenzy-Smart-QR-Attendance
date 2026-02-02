@@ -110,7 +110,7 @@ class SessionController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'start_time' => 'required|date|after:now',
+            'start_time' => 'required|date', // Removed strict after:now to allow creating sessions that start immediately
             'end_time' => 'required|date|after:start_time',
             'location_lat' => 'required|numeric|between:-90,90',
             'location_lng' => 'required|numeric|between:-180,180',
@@ -118,7 +118,7 @@ class SessionController extends Controller
             'radius_meters' => 'nullable|integer|min:10|max:10000',
             'session_type' => 'required|in:admin_approved,pre_registered,open',
             'requires_payment' => 'nullable|boolean',
-            'payment_amount' => 'required_if:requires_payment,true|numeric|min:0',
+            'payment_amount' => 'nullable|numeric|min:0|required_if:requires_payment,true',
             'max_attendees' => 'nullable|integer|min:1',
             'recurrence_type' => 'nullable|in:one_time,daily,weekly,monthly',
             'recurrence_end_date' => 'required_if:recurrence_type,daily,weekly,monthly|nullable|date|after:start_time',
