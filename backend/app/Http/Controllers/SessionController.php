@@ -27,7 +27,7 @@ class SessionController extends Controller
         $user = auth()->user();
         $query = Session::with(['creator', 'organization']);
 
-        // Scope to organization for org admin
+        // Scope to organization for org admin (Super Admins see all)
         if ($user->hasRole('organization_admin')) {
             $query->inOrganization($user->organization_id);
         }
@@ -190,8 +190,8 @@ class SessionController extends Controller
     {
         $session = Session::findOrFail($id);
 
-        // Check permission
-        if ($session->created_by !== auth()->id() && auth()->user()->role !== 'admin') {
+        // Check permission (Super Admins can edit any session)
+        if ($session->created_by !== auth()->id() && !auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized'
@@ -247,9 +247,9 @@ class SessionController extends Controller
     {
         $session = Session::findOrFail($id);
 
-        // Check permission
+        // Check permission (Super Admins can delete any session)
         $user = auth()->user();
-        if ($user->role !== 'admin') {
+        if (!$user->isAdmin() && !$user->isSuperAdmin()) {
             if ($user->hasRole('organization_admin')) {
                 if ($session->organization_id !== $user->organization_id) {
                     return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);

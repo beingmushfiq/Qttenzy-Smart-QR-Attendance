@@ -91,14 +91,14 @@ class UserController extends Controller
         $user = Auth::user();
         $query = \App\Models\User::with(['organization', 'roles']);
 
-        // Scope to organization for org admin
+        // Scope to organization for org admin (Super Admins see all)
         if ($user->hasRole('organization_admin')) {
             $query->inOrganization($user->organization_id);
             // Don't list admins
             $query->whereDoesntHave('roles', function($q) {
                 $q->where('name', 'admin');
             });
-        } elseif (!$user->isAdmin()) {
+        } elseif (!$user->isAdmin() && !$user->isSuperAdmin()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -130,7 +130,7 @@ class UserController extends Controller
         $currentUser = Auth::user();
         
         // Permission check
-        if (!$currentUser->isAdmin() && !$currentUser->hasRole('organization_admin')) {
+        if (!$currentUser->isAdmin() && !$currentUser->isSuperAdmin() && !$currentUser->hasRole('organization_admin')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -187,12 +187,12 @@ class UserController extends Controller
         $currentUser = Auth::user();
         $user = \App\Models\User::findOrFail($id);
 
-        // Scope check
+        // Scope check (Super Admins can edit any user)
         if ($currentUser->hasRole('organization_admin')) {
             if ($user->organization_id !== $currentUser->organization_id || $user->isAdmin()) {
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
-        } elseif (!$currentUser->isAdmin()) {
+        } elseif (!$currentUser->isAdmin() && !$currentUser->isSuperAdmin()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -244,11 +244,12 @@ class UserController extends Controller
         $currentUser = Auth::user();
         $user = \App\Models\User::findOrFail($id);
 
+        // Scope check (Super Admins can delete any user)
         if ($currentUser->hasRole('organization_admin')) {
             if ($user->organization_id !== $currentUser->organization_id || $user->isAdmin()) {
                  return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
-        } elseif (!$currentUser->isAdmin()) {
+        } elseif (!$currentUser->isAdmin() && !$currentUser->isSuperAdmin()) {
              return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 

@@ -200,6 +200,39 @@ class AdminController extends Controller
     }
 
     /**
+     * Delete attendance record
+     */
+    public function deleteAttendance($id)
+    {
+        try {
+            $attendance = Attendance::findOrFail($id);
+            
+            // Log the deletion before deleting
+            AttendanceLog::create([
+                'attendance_id' => $attendance->id,
+                'action' => 'deleted',
+                'old_status' => $attendance->status,
+                'new_status' => null,
+                'notes' => 'Attendance record deleted by admin',
+                'performed_by' => auth()->id(),
+            ]);
+            
+            $attendance->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Attendance deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
      * Override attendance status (admin can change any status)
      */
     public function overrideAttendance($id, Request $request)

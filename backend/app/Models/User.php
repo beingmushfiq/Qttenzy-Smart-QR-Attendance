@@ -301,6 +301,16 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
+     * Check if user is a Super Admin (global admin with no organization).
+     * 
+     * @return bool
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->organization_id === null && $this->isAdmin();
+    }
+
+    /**
      * Check if user is a teacher/session manager.
      * 
      * @return bool

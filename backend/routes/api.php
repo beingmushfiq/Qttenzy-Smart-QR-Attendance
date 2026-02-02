@@ -49,35 +49,32 @@ Route::prefix('v1')->group(function () {
         Route::post('/user/webauthn/register', [UserController::class, 'registerWebAuthn']);
 
         // Sessions
-        Route::get('/sessions', [SessionController::class, 'index']);
-        Route::get('/sessions/{id}', [SessionController::class, 'show']);
+        Route::get('/sessions', [SessionController::class, 'index'])->middleware('permission:view_sessions');
+        Route::get('/sessions/{id}', [SessionController::class, 'show'])->middleware('permission:view_sessions');
         Route::post('/sessions', [SessionController::class, 'store'])
-            ->middleware('role:admin,session_manager');
+            ->middleware('permission:create_sessions');
         Route::put('/sessions/{id}', [SessionController::class, 'update'])
-            ->middleware('role:admin,session_manager');
+            ->middleware('permission:edit_sessions');
         Route::delete('/sessions/{id}', [SessionController::class, 'destroy'])
-            ->middleware('role:admin');
+            ->middleware('permission:delete_sessions');
         Route::get('/sessions/{id}/qr', [SessionController::class, 'getQR'])
-            ->middleware('role:admin,session_manager');
+            ->middleware('permission:generate_qr');
 
         // Attendance
-        Route::post('/attendance/verify', [AttendanceController::class, 'verify']);
-        Route::get('/attendance/history', [AttendanceController::class, 'history']);
+        Route::post('/attendance/verify', [AttendanceController::class, 'verify'])->middleware('permission:mark_attendance');
+        Route::get('/attendance/history', [AttendanceController::class, 'history'])->middleware('permission:view_attendance');
         Route::get('/attendance/session/{sessionId}', [AttendanceController::class, 'sessionAttendance'])
-            ->middleware('role:admin,session_manager');
+            ->middleware('permission:view_attendance');
 
         // Payment
         Route::post('/payment/initiate', [PaymentController::class, 'initiate']);
         Route::get('/payment/status/{id}', [PaymentController::class, 'status']);
 
-        // Organization Admin Routes
-        Route::middleware('role:organization_admin,admin')->group(function () {
-            Route::get('/organizations/{id}/statistics', [App\Http\Controllers\OrganizationController::class, 'statistics']);
-            Route::get('/users', [UserController::class, 'index']);
-            Route::post('/users', [UserController::class, 'store']);
-            Route::put('/users/{id}', [UserController::class, 'update']);
-            Route::delete('/users/{id}', [UserController::class, 'destroy']);
-        });
+        // Organization Admin Routes (User Management)
+        Route::get('/users', [UserController::class, 'index'])->middleware('permission:view_users');
+        Route::post('/users', [UserController::class, 'store'])->middleware('permission:create_users');
+        Route::put('/users/{id}', [UserController::class, 'update'])->middleware('permission:edit_users');
+        Route::delete('/users/{id}', [UserController::class, 'destroy'])->middleware('permission:delete_users');
 
         // Admin
         Route::prefix('admin')->middleware('role:admin')->group(function () {
@@ -86,11 +83,12 @@ Route::prefix('v1')->group(function () {
             Route::put('/users/{id}/status', [AdminController::class, 'updateUserStatus']);
             
             // Attendance Management
-            Route::get('/attendances/pending', [AdminController::class, 'pendingAttendances']);
-            Route::put('/attendances/{id}/approve', [AdminController::class, 'approveAttendance']);
-            Route::put('/attendances/{id}/reject', [AdminController::class, 'rejectAttendance']);
-            Route::put('/attendances/{id}/override', [AdminController::class, 'overrideAttendance']);
-            Route::get('/attendances/{id}/logs', [AdminController::class, 'attendanceLogs']);
+            Route::get('/attendances/pending', [AdminController::class, 'pendingAttendances'])->middleware('permission:view_attendance');
+            Route::put('/attendances/{id}/approve', [AdminController::class, 'approveAttendance'])->middleware('permission:approve_attendance');
+            Route::put('/attendances/{id}/reject', [AdminController::class, 'rejectAttendance'])->middleware('permission:reject_attendance');
+            Route::delete('/attendances/{id}', [AdminController::class, 'deleteAttendance'])->middleware('permission:delete_attendance');
+            Route::put('/attendances/{id}/override', [AdminController::class, 'overrideAttendance'])->middleware('permission:override_attendance');
+            Route::get('/attendances/{id}/logs', [AdminController::class, 'attendanceLogs'])->middleware('permission:view_audit_logs');
             
             // Analytics
             Route::get('/analytics/attendance-trends', [AdminController::class, 'attendanceTrends']);
