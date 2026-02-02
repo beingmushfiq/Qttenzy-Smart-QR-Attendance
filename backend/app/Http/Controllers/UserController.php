@@ -63,13 +63,21 @@ class UserController extends Controller
             ], 422);
         }
 
-        // Implementation for face enrollment
-        // Store face descriptor in database
+        $user = Auth::user();
+        
+        // Store face descriptor
+        $user->face_descriptor = json_encode($request->face_descriptor);
+        $user->face_enrolled = true;
+        $user->face_consent = true; // Implied consent by enrolling
+        $user->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Face enrolled successfully'
-        ], 201);
+            'message' => 'Face enrolled successfully',
+            'data' => [
+                'face_enrolled' => true
+            ]
+        ], 200);
     }
 
     /**
