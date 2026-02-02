@@ -3,7 +3,15 @@ import { createPortal } from 'react-dom';
 import { useQRScanner } from '../../hooks/useQRScanner';
 
 const QRScanner = ({ onScan, onClose }) => {
-  const { videoRef, scanning, error, startScanning, stopScanning } = useQRScanner(onScan);
+  const { 
+    videoRef, 
+    scanning, 
+    error, 
+    startScanning, 
+    stopScanning, 
+    switchCamera, 
+    devices 
+  } = useQRScanner(onScan);
 
   useEffect(() => {
     startScanning();
@@ -31,6 +39,35 @@ const QRScanner = ({ onScan, onClose }) => {
             playsInline
             muted
           />
+          
+          {/* Camera Switch Button */}
+          {devices.length > 1 && (
+            <button
+              onClick={switchCamera}
+              className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition-all z-20"
+              title="Switch Camera"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+              >
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                <path d="M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                <path d="M7 17l1.5-1.5"/>
+                <path d="M17 17l-1.5-1.5"/>
+                <path d="m7 17-1.5-1.5"/>
+                <path d="m17 17 1.5-1.5"/>
+              </svg>
+            </button>
+          )}
+
           <div className="absolute inset-0 border-4 border-blue-500 rounded-lg pointer-events-none">
             <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-500"></div>
             <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-blue-500"></div>
