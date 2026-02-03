@@ -123,12 +123,12 @@ class AttendanceController extends Controller
                 'location_lng' => $data['location']['lng'],
                 'distance_from_venue' => $locationResult['distance'],
                 'ip_address' => $request->ip(),
-                'device_info' => json_encode([
+                'device_info' => [
                     'user_agent' => $request->userAgent(),
                     'platform' => $request->header('User-Agent')
-                ]),
+                ],
                 'webauthn_used' => isset($data['webauthn_credential_id']),
-                'verification_method' => $this->attendanceService->determineMethod($data),
+                'verification_method' => $faceMatch ? ($locationResult['valid'] ? 'qr_face_gps' : 'qr_face') : 'qr_only',
                 'status' => 'verified'
             ]);
 
