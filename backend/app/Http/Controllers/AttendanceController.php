@@ -138,14 +138,16 @@ class AttendanceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Attendance verified successfully',
+                'message' => 'Attendance submitted successfully! Pending admin approval.',
                 'data' => [
                     'attendance_id' => $attendance->id,
                     'verified_at' => $attendance->verified_at,
                     'verification_method' => $attendance->verification_method,
                     'face_match_score' => $attendance->face_match_score,
                     'gps_valid' => $attendance->gps_valid,
-                    'distance_from_venue' => $attendance->distance_from_venue
+                    'distance_from_venue' => $attendance->distance_from_venue,
+                    'status' => 'pending',
+                    'requires_approval' => true
                 ]
             ]);
 
