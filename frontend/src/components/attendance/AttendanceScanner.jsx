@@ -124,7 +124,22 @@ const AttendanceScanner = ({ sessionId: initialSessionId }) => {
       toast.success('Attendance verified successfully!');
       navigate('/attendance');
     } catch (error) {
-      toast.error(error.message || 'Verification failed');
+      console.error('Attendance verification error:', error);
+      
+      // Extract detailed error message
+      let errorMessage = 'Verification failed';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.error) {
+        errorMessage = error.error;
+      } else if (error?.errors) {
+        // Validation errors
+        const errorMessages = Object.values(error.errors).flat();
+        errorMessage = errorMessages.join(', ');
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
