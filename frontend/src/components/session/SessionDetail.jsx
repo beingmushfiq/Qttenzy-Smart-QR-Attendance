@@ -102,12 +102,23 @@ const SessionDetail = () => {
 
   return (
     <div className="space-y-8 pb-10">
-      <button
-        onClick={() => navigate('/sessions')}
-        className="flex items-center gap-2 text-white/40 hover:text-white transition-colors font-bold uppercase tracking-widest text-xs"
-      >
-        <span>←</span> Back to Sessions
-      </button>
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => navigate('/sessions')}
+          className="flex items-center gap-2 text-white/40 hover:text-white transition-colors font-bold uppercase tracking-widest text-xs"
+        >
+          <span>←</span> Back to Sessions
+        </button>
+
+        {(user?.role === 'admin' || user?.role === 'session_manager' || (user?.role === 'teacher' && session.created_by === user.id)) && (
+          <button
+            onClick={() => navigate(`/sessions/edit/${id}`)}
+            className="flex items-center gap-2 text-premium-primary hover:text-premium-primary/80 transition-colors font-bold uppercase tracking-widest text-xs bg-premium-primary/10 px-4 py-2 rounded-lg border border-premium-primary/20"
+          >
+            <span>✎</span> Edit Session
+          </button>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
