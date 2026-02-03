@@ -57,7 +57,7 @@ const SessionList = () => {
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">Sessions</h1>
           <p className="text-white/40 font-medium tracking-tight text-sm sm:text-base">Discover and participate in active attendance sessions.</p>
         </div>
-        {(user?.role === 'admin' || user?.role === 'session_manager') && (
+        {(user?.role === 'admin' || user?.role === 'session_manager' || user?.role === 'organization_admin' || user?.role === 'teacher' || user?.role === 'event_manager') && (
           <button
             onClick={() => navigate('/sessions/create')}
             className="bg-gradient-premium text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl font-bold shadow-lg shadow-premium-primary/20 hover:scale-[1.02] transition-all whitespace-nowrap text-sm sm:text-base"

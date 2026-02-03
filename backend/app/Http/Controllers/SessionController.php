@@ -107,6 +107,14 @@ class SessionController extends Controller
      */
     public function store(Request $request)
     {
+        // specific permission check
+        if (!auth()->user()->hasPermission('create_sessions') && !auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin()) {
+             return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized: You do not have permission to create sessions.'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
