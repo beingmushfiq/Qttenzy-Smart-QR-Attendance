@@ -43,7 +43,7 @@ class FaceVerificationService
      * @return User
      * @throws \Exception
      */
-    public function enrollFace(int $userId, array $descriptor, ?string $imagePath = null): User
+    public function enrollFace(int $userId, array $descriptor, ?string $imagePath = null): \App\Models\FaceEnrollment
     {
         // Validate descriptor format
         if (!$this->validateDescriptor($descriptor)) {
@@ -52,21 +52,31 @@ class FaceVerificationService
 
         $user = User::findOrFail($userId);
 
-        // Store plain text descriptor (or you can keep encryption if you successfully implemented it in UserController,
-        // but for simplicity and debugging "works for everyone", we often start with plain first.
-        // HOWEVER, the UserController I wrote SAVED AS JSON.
-        // So I will align this service to read that JSON.)
+        // Encrypt logic should match UserController
+        $faceDescriptor = json_encode($descriptor);
+        $encryptedDescriptor = encrypt($faceDescriptor);
 
-        $user->face_descriptor = json_encode($descriptor);
+        $enrollment = \App\Models\FaceEnrollment::updateOrCreate(
+            ['user_id' => $userId],
+            [
+                'encrypted_descriptor' => $encryptedDescriptor,
+                'image_path' => $imagePath,
+                'confidence_threshold' => 0.7, // Matching Score threshold
+                'requires_reverification' => false,
+                'verification_count' => 0
+            ]
+        );
+
+        // Sync flags on User model if we still use them for quick checks
         $user->face_enrolled = true;
-        $user->face_consent = true;
+        // $user->face_descriptor = ...; // We don't save this on User anymore
         $user->save();
 
-        Log::info('Face enrolled successfully', [
+        Log::info('Face enrolled successfully via Service', [
             'user_id' => $userId
         ]);
 
-        return $user;
+        return $enrollment;
     }
 
     /**
@@ -88,10 +98,10 @@ class FaceVerificationService
             ];
         }
 
-        // Get user
-        $user = User::find($userId);
+        // Get user enrollment
+        $enrollment = \App\Models\FaceEnrollment::where('user_id', $userId)->first();
 
-        if (!$user || !$user->face_enrolled || !$user->face_descriptor) {
+        if (!$enrollment) {
             return [
                 'match' => false,
                 'score' => 0,
@@ -102,9 +112,17 @@ class FaceVerificationService
 
         // Decode descriptor
         try {
-            // It was saved as JSON
-            $enrolledDescriptor = json_decode($user->face_descriptor, true);
+            // Decrypt the stored descriptor
+            // Stored format: encrypt(json_encode([1, 2, ...]))
+            $decryptedJson = decrypt($enrollment->encrypted_descriptor);
+            $enrolledDescriptor = json_decode($decryptedJson, true);
+
+            if (!is_array($enrolledDescriptor)) {
+                 throw new \Exception("Decoded descriptor is not an array");
+            }
+
         } catch (\Exception $e) {
+            Log::error('Face decryption failed', ['error' => $e->getMessage(), 'user_id' => $userId]);
              return [
                 'match' => false,
                 'score' => 0,
@@ -117,17 +135,29 @@ class FaceVerificationService
         $distance = $this->calculateEuclideanDistance($enrolledDescriptor, $currentDescriptor);
         
         // Convert distance to similarity score (0-1 range)
-        // Lower distance = higher similarity
-        $score = max(0, 1 - ($distance / 2)); // Normalize to 0-1 range
+        // FaceAPI matches are typically < 0.6. 
+        // 0.0 distance = 100% score.
+        // 0.6 distance = ~70% score?
+        // Let's use a simpler mapping: Score = max(0, 1 - distance) (where 0.4 distance = 0.6 score, which is somewhat harsh).
+        // Better: Score = max(0, 1 - (distance / 0.8)) where 0.8 is "zero match".
+        // Actually, let's keep previous logic if it was sane, OR improve it.
+        // Previous: max(0, 1 - ($distance / 2)) -> Distance 0.6 = 0.7 score. Matches threshold 0.7.
+        // That seems fine.
+        $score = max(0, 1 - ($distance / 2)); 
         
-        // Check against threshold
-        $threshold = self::DEFAULT_THRESHOLD;
+        // Check against threshold (Use enrollment specific threshold if available, else default)
+        $threshold = $enrollment->confidence_threshold ?? self::DEFAULT_THRESHOLD;
+        
+        // FaceAPI: distance < 0.6 is a match.
+        // Score: (1 - 0.6/2) = 0.7. 
+        // So Score >= 0.7 means Distance <= 0.6.
         $match = $score >= $threshold;
 
         Log::info('Face verification completed', [
             'user_id' => $userId,
             'match' => $match,
             'score' => round($score, 4),
+            'distance' => round($distance, 4),
             'threshold' => $threshold,
         ]);
 
@@ -191,9 +221,9 @@ class FaceVerificationService
      * @param int $userId
      * @param array $newDescriptor
      * @param string|null $imagePath
-     * @return User
+     * @return \App\Models\FaceEnrollment
      */
-    public function reEnrollFace(int $userId, array $newDescriptor, ?string $imagePath = null): User
+    public function reEnrollFace(int $userId, array $newDescriptor, ?string $imagePath = null): \App\Models\FaceEnrollment
     {
         // For User model implementation, re-enroll is just enroll (overwrite)
         return $this->enrollFace($userId, $newDescriptor, $imagePath);
@@ -207,8 +237,15 @@ class FaceVerificationService
      */
     public function hasFaceEnrolled(int $userId): bool
     {
+        // Check both flag and actual record existence
         $user = User::find($userId);
-        return $user && $user->face_enrolled;
+        if (!$user) return false;
+
+        // Optimization: rely on flag, but if flag is true, ensure record exists
+        if ($user->face_enrolled) {
+            return \App\Models\FaceEnrollment::where('user_id', $userId)->exists();
+        }
+        return false;
     }
 
     /**
@@ -221,7 +258,11 @@ class FaceVerificationService
     {
         $user = User::find($userId);
         if ($user) {
-            $user->face_descriptor = null;
+            // Delete FaceEnrollment record
+            \App\Models\FaceEnrollment::where('user_id', $userId)->delete();
+
+            // Clear User flags
+            $user->face_descriptor = null; // Legacy cleanup
             $user->face_enrolled = false;
             $user->face_consent = false;
             return $user->save();
