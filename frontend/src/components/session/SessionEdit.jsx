@@ -143,7 +143,7 @@ const SessionEdit = () => {
 
                     <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
                         {/* Status Management - Admin Only */}
-                        {(user?.role === 'admin' || user?.role === 'session_manager') && (
+                        {(user?.role === 'admin' || user?.role === 'organization_admin' || user?.role === 'session_manager') && (
                             <div className="bg-premium-primary/5 p-6 rounded-2xl border border-premium-primary/20">
                                 <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                                     <span className="text-xl">⚙️</span> Status Management

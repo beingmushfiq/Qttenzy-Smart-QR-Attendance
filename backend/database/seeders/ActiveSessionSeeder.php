@@ -16,18 +16,32 @@ class ActiveSessionSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info("Seeding 5 Active Sessions...");
+        $this->command->info("Seeding Active Sessions for ALL Organizations...");
 
-        // Fix: Use whereIn for role column instead of undefined scope
-        $teacher = User::whereIn('role', ['teacher', 'session_manager', 'admin'])->first();
-        $organization = Organization::first();
+        $organizations = Organization::all();
 
-        if (!$teacher) {
-            $this->command->warn('No suitable user found to create sessions.');
-            return;
+        if ($organizations->isEmpty()) {
+            $this->command->warn('No organizations found. Creating one...');
+            $organization = Organization::create([
+                'name' => 'Demo Organization',
+                'slug' => 'demo-org',
+                'status' => 'active'
+            ]);
+            $organizations = collect([$organization]);
         }
 
-        $now = Carbon::now();
+        // Find a fallback creator
+        $fallbackCreator = User::whereIn('role', ['teacher', 'session_manager', 'admin', 'organization_admin'])->first();
+        if (!$fallbackCreator) {
+             $this->command->warn('No suitable user found. Creating a temporary admin.');
+             $fallbackCreator = User::create([
+                 'name' => 'Seeder Admin',
+                 'email' => 'seeder@example.com',
+                 'password' => bcrypt('password'),
+                 'role' => 'admin',
+                 'is_active' => true
+             ]);
+        }
 
         $sessionTopics = [
             'Advanced AI Architectures',
@@ -37,35 +51,55 @@ class ActiveSessionSeeder extends Seeder
             'Technical Leadership Workshop'
         ];
 
-        foreach ($sessionTopics as $index => $topic) {
-            $session = Session::create([
-                'title' => $topic,
-                'description' => "A deep dive into $topic. Join us for a comprehensive session.",
-                'organization_id' => $organization?->id,
-                'start_time' => $now->copy()->addHours($index + 1), // Staggered start times
-                'end_time' => $now->copy()->addHours($index + 3),
-                'location_lat' => 23.7000 + ($index * 0.01), // Slightly different locations
-                'location_lng' => 90.3000 + ($index * 0.01),
-                'location_name' => "Room " . (101 + $index),
-                'radius_meters' => 100,
-                'session_type' => 'open',
-                'status' => 'active',
-                'requires_payment' => false,
-                'recurrence_type' => 'one_time',
-                'capacity' => 50,
-                'current_count' => 0,
-                'created_by' => $teacher->id,
-            ]);
+        foreach ($organizations as $organization) {
+            $this->command->info("Seeding for Org: " . $organization->name);
+            
+            // Try to find a user IN this org, else use fallback
+            $creator = User::where('organization_id', $organization->id)
+                           ->whereIn('role', ['teacher', 'session_manager', 'organization_admin'])
+                           ->first() ?? $fallbackCreator;
 
-            // Create Active QR Code
-            QRCode::create([
-                'session_id' => $session->id,
-                'code' => 'QR-' . strtoupper(bin2hex(random_bytes(8))),
-                'is_active' => true,
-                'expires_at' => $session->end_time,
-            ]);
+            foreach ($sessionTopics as $index => $topic) {
+                // Check if session already exists to avoid duplicates if re-run
+                $exists = Session::where('organization_id', $organization->id)
+                                 ->where('title', $topic)
+                                 ->exists();
+                
+                if ($exists) {
+                    continue;
+                }
 
-            $this->command->info("Created Active Session: $topic");
+                $now = Carbon::now();
+                
+                $session = Session::create([
+                    'title' => $topic,
+                    'description' => "A deep dive into $topic. Join us for a comprehensive session.",
+                    'organization_id' => $organization->id,
+                    'start_time' => $now->copy()->addHours($index + 1), // Staggered start times
+                    'end_time' => $now->copy()->addHours($index + 3),
+                    'location_lat' => 23.7000 + ($index * 0.01),
+                    'location_lng' => 90.3000 + ($index * 0.01),
+                    'location_name' => "Room " . (101 + $index),
+                    'radius_meters' => 100,
+                    'session_type' => 'open',
+                    'status' => 'active',
+                    'requires_payment' => false,
+                    'recurrence_type' => 'one_time',
+                    'capacity' => 50,
+                    'current_count' => 0,
+                    'created_by' => $creator->id,
+                ]);
+
+                // Create Active QR Code
+                QRCode::create([
+                    'session_id' => $session->id,
+                    'code' => 'QR-' . strtoupper(bin2hex(random_bytes(8))),
+                    'is_active' => true,
+                    'expires_at' => $session->end_time,
+                ]);
+
+                $this->command->info("  Created Active Session: $topic");
+            }
         }
     }
 }

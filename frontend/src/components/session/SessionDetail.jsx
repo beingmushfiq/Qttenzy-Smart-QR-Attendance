@@ -110,7 +110,7 @@ const SessionDetail = () => {
           <span>←</span> Back to Sessions
         </button>
 
-        {(user?.role === 'admin' || user?.role === 'session_manager' || (user?.role === 'teacher' && session.created_by === user.id)) && (
+        {(user?.role === 'admin' || user?.role === 'organization_admin' || user?.role === 'session_manager' || (user?.role === 'teacher' && session.created_by === user.id)) && (
           <button
             onClick={() => navigate(`/sessions/edit/${id}`)}
             className="flex items-center gap-2 text-premium-primary hover:text-premium-primary/80 transition-colors font-bold uppercase tracking-widest text-xs bg-premium-primary/10 px-4 py-2 rounded-lg border border-premium-primary/20"
