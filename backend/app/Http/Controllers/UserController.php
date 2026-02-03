@@ -107,8 +107,8 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to enroll face',
-                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+                'message' => 'Failed to enroll face: ' . $e->getMessage(),
+                'error' => $e->getMessage()
             ], 500);
         }
     }

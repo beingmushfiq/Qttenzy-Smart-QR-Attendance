@@ -49,8 +49,12 @@ const FaceEnrollment = ({ onEnrolled, onClose }) => {
 
       onEnrolled(faceDescriptor);
       alert('Face enrolled successfully!');
+      onEnrolled(faceDescriptor);
+      alert('Face enrolled successfully!');
     } catch (error) {
-      alert(error.message || 'Face enrollment failed');
+      console.error('Enrollment error:', error);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Face enrollment failed';
+      alert(errorMessage);
     } finally {
       setEnrolling(false);
     }
