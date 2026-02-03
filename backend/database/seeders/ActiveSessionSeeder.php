@@ -48,7 +48,18 @@ class ActiveSessionSeeder extends Seeder
             'Cloud Native Deployment',
             'Cybersecurity Best Practices',
             'Modern Frontend Frameworks',
-            'Technical Leadership Workshop'
+            'Technical Leadership Workshop',
+            // Added 10 more topics as requested
+            'Database Optimization Techniques',
+            'Mobile App Development with React Native',
+            'DevOps and CI/CD Pipelines',
+            'Introduction to Machine Learning',
+            'Blockchain Fundamentals',
+            'UX/UI Design Principles',
+            'Agile Project Management',
+            'Serverless Computing',
+            'Data Science with Python',
+            'Internet of Things (IoT) Security'
         ];
 
         foreach ($organizations as $organization) {
