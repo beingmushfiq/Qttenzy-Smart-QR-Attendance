@@ -80,47 +80,69 @@ const FaceEnrollment = ({ onEnrolled, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg sm:text-xl font-bold">Enroll Your Face</h2>
-          <button
+    <div className="fixed inset-0 z-50 bg-black text-white flex flex-col justify-center items-center p-4">
+      {/* Background Overlay */}
+      <div className="absolute inset-0 bg-gradient-premium opacity-10 pointer-events-none"></div>
+      
+      <div className="bg-dark/90 backdrop-blur-xl border border-white/10 rounded-3xl p-6 max-w-lg w-full relative shadow-2xl">
+        <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors"
+        >
             ✕
-          </button>
+        </button>
+
+        <div className="text-center mb-6">
+             <h2 className="text-2xl font-bold tracking-tight mb-2">Face Enrollment</h2>
+             <p className="text-white/60 text-sm">Position your face clearly within the frame.</p>
         </div>
 
-        <div className="relative bg-black rounded-lg overflow-hidden aspect-square sm:aspect-video">
+        <div className="relative w-full aspect-square sm:aspect-video bg-black rounded-2xl overflow-hidden mb-6 border-2 border-white/10 shadow-inner">
           <video 
             ref={videoRef} 
             autoPlay 
             playsInline 
-            className="w-full h-full object-cover"
+            muted
+            className="w-full h-full object-cover transform scale-x-[-1]" // Mirror effect
           />
           <canvas ref={canvasRef} className="hidden" />
+          
+          {/* Face Frame Overlay */}
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div className="w-48 h-48 sm:w-64 sm:h-64 border-2 border-premium-primary/50 rounded-full relative">
+                  <div className="absolute inset-0 border-t-4 border-premium-primary rounded-full animate-spin-slow opacity-50"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-2 h-2 bg-premium-primary rounded-full animate-ping"></div>
+                  </div>
+              </div>
+          </div>
         </div>
 
-        <p className="mt-4 text-xs sm:text-sm text-gray-600">
-          Ensure your face is clearly visible and well-lit. Click "Enroll Face" when ready.
-        </p>
+        {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-200 text-sm text-center">
+                {error}
+            </div>
+        )}
 
-        <div className="mt-4 flex flex-col sm:flex-row gap-2">
+        <div className="flex gap-4">
           <button
             onClick={handleEnroll}
-            disabled={enrolling}
-            className="flex-1 bg-blue-500 text-white py-2.5 sm:py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium"
+            disabled={enrolling || !modelsLoaded}
+            className="flex-1 bg-gradient-premium text-white font-bold py-3.5 rounded-xl shadow-lg shadow-premium-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100"
           >
-            {enrolling ? 'Enrolling...' : 'Enroll Face'}
+            {enrolling ? 'Processing...' : 'Capture & Enroll'}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-500 text-white py-2.5 sm:py-2 rounded hover:bg-gray-600 text-sm sm:text-base font-medium"
+            className="px-6 py-3.5 rounded-xl bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all font-semibold"
           >
             Cancel
           </button>
         </div>
+        
+        {!modelsLoaded && (
+            <p className="text-center text-xs text-white/30 mt-4 animate-pulse">Initializing face recognition models...</p>
+        )}
       </div>
     </div>
   );

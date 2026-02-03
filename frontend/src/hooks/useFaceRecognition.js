@@ -16,6 +16,20 @@ export const useFaceRecognition = () => {
         setLoading(true);
         setError(null);
 
+        // Check if models are already loaded to avoid re-loading
+        if (
+             faceapi.nets.tinyFaceDetector.params &&
+             faceapi.nets.faceLandmark68Net.params &&
+             faceapi.nets.faceRecognitionNet.params &&
+             faceapi.nets.faceExpressionNet.params
+        ) {
+             setModelsLoaded(true);
+             setLoading(false);
+             return;
+        }
+
+        console.log("Loading Face API models from:", MODEL_URL);
+
         await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
           faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
@@ -23,17 +37,20 @@ export const useFaceRecognition = () => {
           faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
         ]);
 
+        console.log("Face API models loaded successfully");
         setModelsLoaded(true);
         setLoading(false);
       } catch (error) {
         console.error('Error loading face models:', error);
-        setError('Failed to load face recognition models');
+        setError('Failed to load face recognition models. Please refresh.');
         setLoading(false);
       }
     };
 
-    loadModels();
-  }, []);
+    if (!modelsLoaded) {
+        loadModels();
+    }
+  }, [modelsLoaded]);
 
   const captureFace = async () => {
     if (!modelsLoaded || !videoRef.current) {

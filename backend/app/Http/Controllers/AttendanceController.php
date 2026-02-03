@@ -78,16 +78,24 @@ class AttendanceController extends Controller
             //     ], 409);
             // }
 
-            // 3. Face Verification (if provided) - Optional for demo
+            // 3. Face Verification (if provided)
             if (isset($data['face_descriptor'])) {
                 $faceResult = $this->faceService->verifyFace(
                     $user->id,
                     $data['face_descriptor']
                 );
 
-                // For demo: Don't block submission on face mismatch, just log it
                 $faceMatchScore = $faceResult['score'];
                 $faceMatch = $faceResult['match'];
+
+                // STRICT: If face verification was attempted but failed, reject attendance
+                if (!$faceMatch) {
+                     return response()->json([
+                        'success' => false,
+                        'message' => 'Face verification failed. Match score: ' . round($faceMatchScore * 100, 1) . '%',
+                        'data' => ['score' => $faceMatchScore]
+                    ], 403);
+                }
             }
 
             // 4. GPS Validation (Optional for demo)

@@ -1,295 +1,340 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import QRScanner from '../qr/QRScanner';
-import FaceVerification from '../face/FaceVerification';
 import { useGeolocation } from '../../hooks/useGeolocation';
+import { useFaceRecognition } from '../../hooks/useFaceRecognition';
 import { attendanceAPI } from '../../services/api/attendance';
 import { userAPI } from '../../services/api/user';
 import { useAuthStore } from '../../store/authStore';
-import GlassCard from '../common/GlassCard';
+import QRScanner from '../qr/QRScanner';
 
 const AttendanceScanner = ({ sessionId: initialSessionId }) => {
-  const [step, setStep] = useState('select'); // select -> authenticate -> gps -> submit
-  const [authMethod, setAuthMethod] = useState(null); // 'qr' or 'face'
-  const [qrCode, setQrCode] = useState(null);
-  const [faceResult, setFaceResult] = useState(null);
+  const [step, setStep] = useState('select'); // select, scan, face, processing, success, fail
+  const [scannedData, setScannedData] = useState(null);
+  const [sessionData, setSessionData] = useState({ id: initialSessionId });
+  const [verificationStatus, setVerificationStatus] = useState(null); // 'processing', 'success', 'error'
+  const [errorMessage, setErrorMessage] = useState('');
   const [enrolledDescriptor, setEnrolledDescriptor] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [scannedSessionId, setScannedSessionId] = useState(null);
+  const [authMethod, setAuthMethod] = useState(null); // 'qr' or 'face'
+
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const { location, error: locationError, getCurrentLocation, loading: locationLoading } = useGeolocation();
-
-  // Use either the prop or the one from the QR scan
-  const activeSessionId = initialSessionId || scannedSessionId;
-
+  const { location, getCurrentLocation } = useGeolocation();
+  const { modelsLoaded, captureFace, compareFaces } = useFaceRecognition();
+  
+  // Load enrolled face on mount
   useEffect(() => {
-    const fetchEnrolledFace = async () => {
+    const loadFace = async () => {
       try {
-        // Try to get from API first
         const response = await userAPI.getFaceEnrollment();
         if (response.success && response.data.face_descriptor) {
           setEnrolledDescriptor(response.data.face_descriptor);
-          // Update localStorage as cache
-          localStorage.setItem('face_descriptor', JSON.stringify(response.data.face_descriptor));
-          return;
         }
-      } catch (error) {
-        console.log('API fetch failed, trying localStorage fallback');
-      }
-      
-      // Fallback to localStorage
-      const storedDescriptor = localStorage.getItem('face_descriptor');
-      if (storedDescriptor) {
-        setEnrolledDescriptor(JSON.parse(storedDescriptor));
+      } catch (err) {
+        console.warn("Could not load enrolled face:", err);
       }
     };
-    fetchEnrolledFace();
+    loadFace();
   }, []);
 
-  const handleMethodSelect = (method) => {
-    setAuthMethod(method);
-    setStep('authenticate');
-  };
+  // Update session data if prop changes
+  useEffect(() => {
+      if (initialSessionId) {
+          setSessionData({ id: initialSessionId });
+      }
+  }, [initialSessionId]);
 
-  const handleQRScanned = (code) => {
-    // Attempt to parse session ID from QR code if not already present
-    if (!initialSessionId) {
-       // Format: SESSION_{sessionId}_{timestamp}_{random}
-       const parts = code.split('_');
-       if (parts.length >= 2 && parts[0] === 'SESSION') {
-          const id = parseInt(parts[1]);
-          if (!isNaN(id)) {
-            setScannedSessionId(id);
-          } else {
-             toast.error('Invalid QR Code format: Could not extract Session ID');
-             return;
-          }
-       } else {
-          toast.error('Invalid QR Code format');
-          return;
-       }
+  const handleQRScan = (data) => {
+    // Expected: SESSION_{id}_... or just {id}
+    let sid = null;
+    if (data.startsWith('SESSION_')) {
+        const parts = data.split('_');
+        sid = parts[1];
+    } else {
+        sid = parseInt(data);
     }
 
-    setQrCode(code);
-    // For demo: Skip GPS and go directly to submit
-    setStep('submit');
-    // Try to get location but don't block on it
-    getCurrentLocation();
-  };
-
-  const handleFaceVerified = (result) => {
-    if (!activeSessionId) {
-        toast.error('Session ID missing. Please scan QR code first to identify session, or select a session from the list.');
+    if (!sid || isNaN(sid)) {
+        toast.error("Invalid QR Code");
         return;
     }
 
-    setFaceResult(result);
-    if (result.verified) {
-      setStep('gps');
-      getCurrentLocation();
+    if (initialSessionId && parseInt(initialSessionId) !== parseInt(sid)) {
+        toast.error("QR Code does not match this session!");
+        return;
     }
+
+    setScannedData(data);
+    
+    // QR Flow: Immediate Submit
+    submitAttendance(sid, null, data);
   };
 
-  const handleSubmit = async () => {
-    if (!activeSessionId) {
-       toast.error('Session ID is required.');
-       return;
+  const handleFaceVerify = async () => {
+    if (!modelsLoaded) {
+        toast.error("Face models not loaded yet. Please wait.");
+        return;
     }
-
-    setSubmitting(true);
+    
     try {
-      const payload = {
-        session_id: activeSessionId
-      };
-
-      // Add location if available
-      if (location && location.lat && location.lng) {
-        payload.location = {
-          lat: location.lat,
-          lng: location.lng,
-          accuracy: location.accuracy
-        };
-      }
-
-      // Add authentication data based on selected method
-      if (authMethod === 'qr' && qrCode) {
-        payload.qr_code = qrCode;
-      } else if (authMethod === 'face' && enrolledDescriptor) {
-        payload.face_descriptor = enrolledDescriptor;
-      }
-
-      await attendanceAPI.verify(payload);
-
-      toast.success('Attendance verified successfully!');
-      navigate('/attendance');
-    } catch (error) {
-      console.error('Attendance verification error:', error);
-      
-      // Extract detailed error message
-      let errorMessage = 'Verification failed';
-      
-      if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.error) {
-        errorMessage = error.error;
-      } else if (error?.errors) {
-        // Validation errors
-        const errorMessages = Object.values(error.errors).flat();
-        errorMessage = errorMessages.join(', ');
-      }
-      
-      toast.error(errorMessage);
-    } finally {
-      setSubmitting(false);
+        const currentDescriptor = await captureFace();
+        
+        // Match against enrolled face
+        const result = await compareFaces(enrolledDescriptor, currentDescriptor);
+        
+        if (result.match) {
+            toast.success("Identity Verified");
+            // Face Flow: Submit with Face Data
+            submitAttendance(sessionData.id, currentDescriptor, null);
+        } else {
+            toast.error("Face not recognized. Please try again.");
+        }
+    } catch (err) {
+        toast.error(err.message || "Verification Failed");
     }
   };
 
-  const authMethods = [
-    { id: 'qr', icon: '📱', label: 'Scan QR', desc: 'Scan session QR code' },
-    // If we don't have a session ID yet, we can't use Face Auth as defined in the current flow
-    // unless we change the flow to allow selecting session later. 
-    // For now, if no session ID is passed, we partially disable Face Auth or warn user 
-    // BUT the user might want to scan QR first then do face auth? 
-    // Actually, if they scan QR, they are doing QR auth.
-    // So if they want to do Face Auth, they MUST have selected a session first.
-    { 
-      id: 'face', 
-      icon: '👤', 
-      label: 'Face Auth', 
-      desc: 'Verify with face recognition', 
-      disabled: !enrolledDescriptor || (!initialSessionId && !scannedSessionId) // Disable if no session ID (and extracted one isn't there yet, which is impossible at select step)
-    },
-  ];
+  const submitAttendance = async (sessionId, faceDesc, qrCode) => {
+    setStep('processing');
+    setVerificationStatus('processing');
+    
+    try {
+        // Get location if possible (don't block heavily if not critical, but good to have)
+        let finalLocation = location;
+        if (!finalLocation) {
+             // Maybe try one last quick fetch or just proceed null
+        }
+
+        const payload = {
+            session_id: sessionId,
+            location: finalLocation ? {
+                lat: finalLocation.lat,
+                lng: finalLocation.lng
+            } : null
+        };
+
+        if (faceDesc) {
+            payload.face_descriptor = faceDesc;
+        }
+        if (qrCode) {
+            payload.qr_code = qrCode;
+        }
+
+        await attendanceAPI.verify(payload);
+        
+        setVerificationStatus('success');
+        setTimeout(() => navigate('/attendance'), 2000);
+    } catch (err) {
+        console.error(err);
+        setVerificationStatus('error');
+        setErrorMessage(err.response?.data?.message || err.message || "Submission Failed");
+        // Allow retry
+        // setStep('fail'); // or stay on processing screen with error
+    }
+  };
+
+  const handleBack = () => {
+      if (step === 'select') {
+          navigate(-1);
+      } else {
+          setStep('select');
+          setVerificationStatus(null);
+          setErrorMessage('');
+      }
+  };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-500 text-left">
-      <div className="text-center">
-        <h2 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Mark Attendance</h2>
-        <p className="text-white/40 font-medium tracking-tight">
-          {step === 'select' && 'Choose your authentication method'}
-          {step === 'authenticate' && `Complete ${authMethod === 'qr' ? 'QR' : 'face'} authentication`}
-          {step === 'gps' && 'Verify your location'}
-        </p>
-      </div>
+    <div className="fixed inset-0 z-50 bg-black text-white flex flex-col font-sans">
+       {/* Top Bar */}
+       <div className="absolute top-0 left-0 right-0 z-20 p-6 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+           <div className="pointer-events-auto">
+               <h2 className="text-2xl font-bold tracking-tight">
+                   {step === 'select' ? 'Mark Attendance' : 
+                    step === 'scan' ? 'Scan QR' : 
+                    step === 'face' ? 'Face Verification' : 'Processing'}
+               </h2>
+               <p className="text-white/60 text-sm">
+                   {step === 'select' ? 'Choose authentication method' : 
+                    step === 'scan' ? 'Align QR code in frame' : 
+                    step === 'face' ? 'Look at the camera' : 'Please wait...'}
+               </p>
+           </div>
+           <button onClick={handleBack} className="pointer-events-auto p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all">
+               ✕
+           </button>
+       </div>
 
-      <GlassCard className="border border-white/10 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-premium-primary/5 via-transparent to-premium-accent/5 pointer-events-none"></div>
-        
-        <div className="relative z-10">
-          {step === 'select' && (
-            <div className="py-8 space-y-6 animate-in fade-in duration-500">
-               {!initialSessionId && (
-                  <div className="mx-auto max-w-md bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-4">
-                     <p className="text-yellow-200 text-sm text-center">
-                        Note: To use Face Authentication, please select a specific session from the list first. 
-                        Otherwise, scan the Session QR code.
-                     </p>
-                  </div>
-               )}
+       {/* Main Content */}
+       <div className="flex-1 relative flex items-center justify-center bg-gray-900 overflow-hidden">
+           
+           {/* Background Ambiance */}
+           <div className="absolute inset-0 bg-gradient-radial from-premium-primary/20 to-black opacity-30"></div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {authMethods.map((method) => (
-                  <button
-                    key={method.id}
-                    onClick={() => !method.disabled && handleMethodSelect(method.id)}
-                    disabled={method.disabled}
-                    className={`group relative p-8 rounded-3xl border-2 transition-all duration-300 ${
-                      method.disabled
-                        ? 'border-white/5 bg-white/[0.02] cursor-not-allowed opacity-40'
-                        : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-premium-primary/30 hover:scale-105 cursor-pointer'
-                    }`}
-                  >
-                    <div className="text-center space-y-4">
-                      <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform duration-300">
-                        {method.icon}
-                      </div>
-                      <h3 className="text-xl font-bold text-white tracking-tight">{method.label}</h3>
-                      <p className="text-white/40 text-sm">{method.desc}</p>
-                      {method.disabled && (
-                        <p className="text-red-400 text-xs mt-2">
-                           {!enrolledDescriptor ? 'Not enrolled' : 'Select Session First'}
-                        </p>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <div className="text-center pt-4">
-                <button
-                  onClick={() => navigate('/attendance')}
-                  className="text-white/40 hover:text-white transition-colors text-sm font-medium"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
+           {/* SELECTION STEP */}
+           {step === 'select' && (
+               <div className="w-full max-w-md px-6 space-y-6 relative z-10 animate-fade-in-up">
+                   
+                   {/* QR Option */}
+                   <button 
+                       onClick={() => { setAuthMethod('qr'); setStep('scan'); }}
+                       className="w-full group relative overflow-hidden rounded-3xl bg-white/5 border border-white/10 p-8 hover:bg-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                   >
+                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                       <div className="flex items-center justify-between">
+                           <div className="flex flex-col text-left">
+                               <span className="text-3xl mb-2">📷</span>
+                               <span className="text-xl font-bold text-white">Scan QR Code</span>
+                               <span className="text-sm text-white/50">Standard method using venue QR</span>
+                           </div>
+                           <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white/50 group-hover:bg-premium-primary group-hover:text-white transition-colors">
+                               ➔
+                           </div>
+                       </div>
+                   </button>
 
-          {step === 'authenticate' && authMethod === 'qr' && (
-            <div className="animate-in fade-in duration-500">
-              <QRScanner
-                onScan={handleQRScanned}
-                onClose={() => setStep('select')}
-              />
-            </div>
-          )}
+                   {/* Face Option */}
+                   <div className="relative">
+                       <button 
+                           onClick={() => { setAuthMethod('face'); setStep('face'); }}
+                           disabled={!sessionData.id}
+                           className={`w-full group relative overflow-hidden rounded-3xl border p-8 transition-all hover:scale-[1.02] active:scale-[0.98]
+                               ${sessionData.id 
+                                   ? 'bg-gradient-to-br from-premium-primary/10 to-premium-accent/5 border-premium-primary/20 hover:border-premium-primary/50 cursor-pointer' 
+                                   : 'bg-white/2 border-white/5 opacity-50 cursor-not-allowed'}`}
+                       >
+                           <div className="flex items-center justify-between">
+                               <div className="flex flex-col text-left">
+                                   <span className="text-3xl mb-2">👤</span>
+                                   <span className="text-xl font-bold text-white">Face Verification</span>
+                                   <span className="text-sm text-white/50">Fast & Secure biometric check</span>
+                               </div>
+                               <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors
+                                   ${sessionData.id ? 'bg-premium-primary/20 text-premium-primary group-hover:bg-premium-primary group-hover:text-white' : 'bg-white/5'}`}>
+                                   {sessionData.id ? '➔' : '🔒'}
+                               </div>
+                           </div>
+                       </button>
+                       {!sessionData.id && (
+                           <div className="absolute -bottom-6 left-0 right-0 text-center">
+                               <span className="text-xs text-red-400 bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
+                                   Select a session first to use Face ID
+                               </span>
+                           </div>
+                       )}
+                   </div>
 
-          {step === 'authenticate' && authMethod === 'face' && enrolledDescriptor && (
-            <div className="animate-in fade-in duration-500">
-              <FaceVerification
-                enrolledDescriptor={enrolledDescriptor}
-                onVerify={handleFaceVerified}
-                onClose={() => setStep('select')}
-              />
-            </div>
-          )}
+               </div>
+           )}
 
-          {step === 'gps' && (
-            <div className="py-10 text-center animate-in slide-in-from-bottom-4 duration-500">
-              {locationLoading ? (
-                <div className="space-y-6">
-                  <div className="relative w-24 h-24 mx-auto">
-                    <div className="absolute inset-0 rounded-full border-4 border-premium-primary/20"></div>
-                    <div className="absolute inset-0 rounded-full border-4 border-t-premium-primary animate-spin"></div>
-                    <div className="absolute inset-0 flex items-center justify-center text-3xl">📍</div>
-                  </div>
-                  <p className="text-white font-bold tracking-tight">Acquiring GPS Location...</p>
-                  <p className="text-white/40 text-sm">Please ensure location services are enabled</p>
-                </div>
-              ) : locationError ? (
-                <div className="space-y-6">
-                  <div className="text-6xl">⚠️</div>
-                  <p className="text-red-400 font-bold">Location Error</p>
-                  <p className="text-white/60 text-sm max-w-md mx-auto">{locationError}</p>
-                  <button
-                    onClick={getCurrentLocation}
-                    className="px-8 py-3 rounded-2xl bg-premium-primary/20 border border-premium-primary/30 text-premium-primary font-bold hover:bg-premium-primary/30 transition-all"
-                  >
-                    Retry
-                  </button>
-                </div>
-              ) : location ? (
-                <div className="space-y-8 animate-in zoom-in-95 duration-500">
-                  <div className="text-6xl">✅</div>
-                  <div className="p-6 rounded-3xl bg-premium-accent/5 border border-premium-accent/10">
-                    <p className="text-premium-accent font-black uppercase tracking-widest text-xs mb-1">Position Locked</p>
-                    <p className="text-white font-bold tracking-tight">Accuracy: {location.accuracy?.toFixed(0)}m</p>
-                  </div>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                    className="w-full px-8 py-4 rounded-2xl bg-gradient-premium text-white font-bold text-lg shadow-lg shadow-premium-primary/30 hover:shadow-premium-primary/50 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  >
-                    {submitting ? 'Submitting...' : 'Submit Attendance'}
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          )}
-        </div>
-      </GlassCard>
+           {/* SCAN STEP */}
+           {step === 'scan' && (
+               <div className="w-full h-full relative">
+                   <QRScanner onScan={handleQRScan} />
+                   
+                   {/* Overlay Frame */}
+                   <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                       <div className="w-64 h-64 border-2 border-white/30 rounded-3xl relative">
+                           <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-premium-primary -mt-1 -ml-1 rounded-tl-2xl"></div>
+                           <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-premium-primary -mt-1 -mr-1 rounded-tr-2xl"></div>
+                           <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-premium-primary -mb-1 -ml-1 rounded-bl-2xl"></div>
+                           <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-premium-primary -mb-1 -mr-1 rounded-br-2xl"></div>
+                           <div className="absolute inset-0 bg-premium-primary/5 animate-pulse"></div>
+                       </div>
+                   </div>
+               </div>
+           )}
+
+           {/* FACE STEP */}
+           {step === 'face' && (
+               <div className="w-full h-full relative flex flex-col items-center justify-center p-4">
+                   <div className="relative w-full max-w-sm aspect-square bg-black rounded-full overflow-hidden border-4 border-white/10 shadow-2xl mb-8">
+                        {/* We use a hidden FaceEnrollment-style video or just reusing logic? 
+                            Let's use a simple Video element here hooked to useFaceRecognition 
+                            Use the hook's videoRef directly on a video element. 
+                        */}
+                       <video 
+                           ref={useFaceRecognition().videoRef} // This might be tricky if hook creates new ref. 
+                           // Better: AttendanceScanner uses the hook, passes ref here.
+                           // Actually the hook exports videoRef. We need to attach it.
+                           // BUT useFaceRecognition is a hook, so we need to initialize it in this component 
+                           // (which we did at top) and attach ref here.
+                           autoPlay playsInline muted 
+                           className="w-full h-full object-cover transform scale-x-[-1]"
+                       />
+                       
+                       <canvas ref={useFaceRecognition().canvasRef} className="hidden" />
+
+                       {/* Face Overlay */}
+                       <div className="absolute inset-0 border-[3px] border-dashed border-white/20 rounded-full animate-spin-slow-reverse"></div>
+                       <div className="absolute inset-4 border-[3px] border-premium-primary rounded-full animate-pulse-slow shadow-[0_0_30px_rgba(59,130,246,0.5)]"></div>
+                   </div>
+
+                   <button 
+                       onClick={handleFaceVerify}
+                       className="w-full max-w-xs bg-gradient-premium text-white font-bold py-4 rounded-2xl shadow-xl shadow-premium-primary/30 hover:scale-105 active:scale-95 transition-all text-lg"
+                   >
+                       Verify Identity
+                   </button>
+                   
+                   <p className="mt-4 text-white/50 text-sm">
+                       Ensure good lighting and remove accessories
+                   </p>
+               </div>
+           )}
+
+           {/* PROCESSING / SUCCESS / FAIL */}
+           {(step === 'processing' || verificationStatus) && (
+               <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-8">
+                   <div className="text-center space-y-6 max-w-sm">
+                       
+                       {verificationStatus === 'processing' && (
+                           <>
+                               <div className="w-20 h-20 border-4 border-white/10 border-t-premium-primary rounded-full animate-spin mx-auto"></div>
+                               <h3 className="text-2xl font-bold text-white">Verifying...</h3>
+                               <p className="text-white/50">Checking your credentials</p>
+                           </>
+                       )}
+
+                       {verificationStatus === 'success' && (
+                           <>
+                               <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto animate-bounce-slow shadow-lg shadow-green-500/30">
+                                   <span className="text-5xl">✓</span>
+                               </div>
+                               <h3 className="text-3xl font-bold text-white">Attendance Marked!</h3>
+                               <p className="text-green-400">You are good to go.</p>
+                           </>
+                       )}
+
+                       {verificationStatus === 'error' && (
+                           <>
+                               <div className="w-24 h-24 bg-red-500/20 border-2 border-red-500 rounded-full flex items-center justify-center mx-auto text-red-500 mb-2">
+                                   <span className="text-5xl">✕</span>
+                               </div>
+                               <h3 className="text-2xl font-bold text-white">Verification Failed</h3>
+                               <p className="text-white/60 text-sm bg-white/5 p-4 rounded-xl border border-white/10">
+                                   {errorMessage}
+                               </p>
+                               <div className="flex gap-4 pt-2">
+                                   <button 
+                                       onClick={() => { setStep('select'); setVerificationStatus(null); }}
+                                       className="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-xl font-medium transition-colors"
+                                   >
+                                       Back to Menu
+                                   </button>
+                                   <button 
+                                       onClick={() => { setStep(authMethod); setVerificationStatus(null); }}
+                                       className="flex-1 bg-premium-primary hover:bg-premium-primary/80 py-3 rounded-xl font-medium transition-colors"
+                                   >
+                                       Try Again
+                                   </button>
+                               </div>
+                           </>
+                       )}
+
+                   </div>
+               </div>
+           )}
+
+       </div>
     </div>
   );
 };
