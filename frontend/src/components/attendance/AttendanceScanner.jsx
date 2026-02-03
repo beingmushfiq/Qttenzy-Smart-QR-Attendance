@@ -10,7 +10,8 @@ import { useAuthStore } from '../../store/authStore';
 import GlassCard from '../common/GlassCard';
 
 const AttendanceScanner = ({ sessionId }) => {
-  const [step, setStep] = useState('qr'); // qr -> face -> gps -> submit
+  const [step, setStep] = useState('select'); // select -> authenticate -> gps -> submit
+  const [authMethod, setAuthMethod] = useState(null); // 'qr' or 'face'
   const [qrCode, setQrCode] = useState(null);
   const [faceResult, setFaceResult] = useState(null);
   const [enrolledDescriptor, setEnrolledDescriptor] = useState(null);
@@ -22,21 +23,36 @@ const AttendanceScanner = ({ sessionId }) => {
   useEffect(() => {
     const fetchEnrolledFace = async () => {
       try {
-        const response = await userAPI.getProfile();
-        const storedDescriptor = localStorage.getItem('face_descriptor');
-        if (storedDescriptor) {
-          setEnrolledDescriptor(JSON.parse(storedDescriptor));
+        // Try to get from API first
+        const response = await userAPI.getFaceEnrollment();
+        if (response.success && response.data.face_descriptor) {
+          setEnrolledDescriptor(response.data.face_descriptor);
+          // Update localStorage as cache
+          localStorage.setItem('face_descriptor', JSON.stringify(response.data.face_descriptor));
+          return;
         }
       } catch (error) {
-        console.error('Failed to fetch enrolled face:', error);
+        console.log('API fetch failed, trying localStorage fallback');
+      }
+      
+      // Fallback to localStorage
+      const storedDescriptor = localStorage.getItem('face_descriptor');
+      if (storedDescriptor) {
+        setEnrolledDescriptor(JSON.parse(storedDescriptor));
       }
     };
     fetchEnrolledFace();
   }, []);
 
+  const handleMethodSelect = (method) => {
+    setAuthMethod(method);
+    setStep('authenticate');
+  };
+
   const handleQRScanned = (code) => {
     setQrCode(code);
-    setStep('face');
+    setStep('gps');
+    getCurrentLocation();
   };
 
   const handleFaceVerified = (result) => {
@@ -48,29 +64,33 @@ const AttendanceScanner = ({ sessionId }) => {
   };
 
   const handleSubmit = async () => {
-    if (!qrCode || !faceResult || !location) {
-      toast.error('Please complete all verification steps');
+    if (!location) {
+      toast.error('Please wait for GPS location');
       return;
     }
 
     setSubmitting(true);
     try {
-      if (!enrolledDescriptor) {
-        toast.error('Face enrollment not found.');
-        setStep('face');
-        return;
-      }
-
-      await attendanceAPI.verify({
+      const payload = {
         session_id: sessionId,
-        qr_code: qrCode,
-        face_descriptor: enrolledDescriptor,
         location: {
           lat: location.lat,
           lng: location.lng,
           accuracy: location.accuracy
         }
-      });
+      };
+
+      // Add authentication data based on selected method
+      if (authMethod === 'qr' && qrCode) {
+        payload.qr_code = qrCode;
+      } else if (authMethod === 'face' && enrolledDescriptor) {
+        payload.face_descriptor = enrolledDescriptor;
+      } else {
+        toast.error('Authentication data missing');
+        return;
+      }
+
+      await attendanceAPI.verify(payload);
 
       toast.success('Attendance verified successfully!');
       navigate('/attendance');
@@ -81,60 +101,71 @@ const AttendanceScanner = ({ sessionId }) => {
     }
   };
 
-  const steps = [
-    { id: 'qr', icon: '📱', label: 'Scan QR' },
-    { id: 'face', icon: '👤', label: 'Face Auth' },
-    { id: 'gps', icon: '📍', label: 'Location' },
+  const authMethods = [
+    { id: 'qr', icon: '📱', label: 'Scan QR', desc: 'Scan session QR code' },
+    { id: 'face', icon: '👤', label: 'Face Auth', desc: 'Verify with face recognition', disabled: !enrolledDescriptor },
   ];
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-500 text-left">
       <div className="text-center">
-        <h2 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Identity Verification</h2>
-        <p className="text-white/40 font-medium tracking-tight">Multi-factor biometric attendance check</p>
+        <h2 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Mark Attendance</h2>
+        <p className="text-white/40 font-medium tracking-tight">
+          {step === 'select' ? 'Choose your authentication method' : 'Multi-factor biometric attendance check'}
+        </p>
       </div>
 
       <GlassCard className="border border-white/10 relative overflow-hidden">
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-premium-primary/10 blur-[60px]"></div>
         
-        {/* Progress System */}
-        <div className="flex justify-between items-center mb-12 relative z-10 px-4">
-          {steps.map((s, idx) => {
-            const isCompleted = steps.findIndex(x => x.id === step) > idx;
-            const isActive = step === s.id;
-            return (
-              <div key={s.id} className="flex flex-col items-center flex-1 relative">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl z-10 transition-all duration-500 border ${
-                  isCompleted ? 'bg-premium-accent/20 border-premium-accent/30 text-premium-accent' :
-                  isActive ? 'bg-gradient-premium border-white/20 text-white shadow-lg shadow-premium-primary/30 scale-110' :
-                  'bg-white/5 border-white/5 text-white/20'
-                }`}>
-                  {isCompleted ? '✓' : s.icon}
-                </div>
-                <p className={`mt-3 text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-premium-primary' : 'text-white/20'}`}>
-                  {s.label}
-                </p>
-                {idx < steps.length - 1 && (
-                  <div className={`absolute left-1/2 top-6 w-full h-[2px] transition-colors duration-500 -z-0 ${isCompleted ? 'bg-premium-accent' : 'bg-white/5'}`}></div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
         <div className="relative z-10">
-          {step === 'qr' && (
-            <div className="animate-in fade-in duration-500">
-              <QRScanner onScan={handleQRScanned} onClose={() => navigate('/sessions')} />
+          {step === 'select' && (
+            <div className="py-8 space-y-6 animate-in fade-in duration-500">
+              <h3 className="text-center text-white/60 font-bold uppercase tracking-widest text-xs mb-8">
+                Select Authentication Method
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {authMethods.map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => !method.disabled && handleMethodSelect(method.id)}
+                    disabled={method.disabled}
+                    className={`p-6 rounded-2xl border-2 transition-all duration-300 ${
+                      method.disabled
+                        ? 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                        : 'bg-white/5 border-white/20 hover:border-premium-primary hover:bg-premium-primary/10 hover:scale-105 active:scale-95'
+                    }`}
+                  >
+                    <div className="text-5xl mb-4">{method.icon}</div>
+                    <h4 className="text-white font-bold text-lg mb-1">{method.label}</h4>
+                    <p className="text-white/40 text-sm">{method.desc}</p>
+                    {method.disabled && (
+                      <p className="text-red-400 text-xs mt-2">Face not enrolled</p>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => navigate('/sessions')}
+                className="w-full mt-6 px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-all font-bold"
+              >
+                Cancel
+              </button>
             </div>
           )}
 
-          {step === 'face' && enrolledDescriptor && (
+          {step === 'authenticate' && authMethod === 'qr' && (
+            <div className="animate-in fade-in duration-500">
+              <QRScanner onScan={handleQRScanned} onClose={() => setStep('select')} />
+            </div>
+          )}
+
+          {step === 'authenticate' && authMethod === 'face' && enrolledDescriptor && (
             <div className="animate-in fade-in duration-500">
               <FaceVerification
                 enrolledDescriptor={enrolledDescriptor}
                 onVerify={handleFaceVerified}
-                onClose={() => setStep('qr')}
+                onClose={() => setStep('select')}
               />
             </div>
           )}

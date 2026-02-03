@@ -39,21 +39,31 @@ class AttendanceController extends Controller
         try {
             $user = auth()->user();
             $data = $request->all();
+            $session = null;
+            $qrCodeId = null;
+            $faceMatchScore = null;
+            $faceMatch = false;
 
-            // 1. Validate QR Code
-            $qrValidation = $this->qrService->validateQR(
-                $data['qr_code'],
-                $data['session_id']
-            );
+            // 1. Validate QR Code (if provided)
+            if (isset($data['qr_code'])) {
+                $qrValidation = $this->qrService->validateQR(
+                    $data['qr_code'],
+                    $data['session_id']
+                );
 
-            if (!$qrValidation['valid']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or expired QR code'
-                ], 400);
+                if (!$qrValidation['valid']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid or expired QR code'
+                    ], 400);
+                }
+
+                $session = $qrValidation['session'];
+                $qrCodeId = $qrValidation['qr_code_id'];
+            } else {
+                // If no QR code, get session directly
+                $session = \App\Models\Session::findOrFail($data['session_id']);
             }
-
-            $session = $qrValidation['session'];
 
             // 2. Check for duplicate attendance
             $existingAttendance = $this->attendanceService->checkDuplicate(
@@ -68,22 +78,27 @@ class AttendanceController extends Controller
                 ], 409);
             }
 
-            // 3. Face Verification
-            $faceResult = $this->faceService->verifyFace(
-                $user->id,
-                $data['face_descriptor']
-            );
+            // 3. Face Verification (if provided)
+            if (isset($data['face_descriptor'])) {
+                $faceResult = $this->faceService->verifyFace(
+                    $user->id,
+                    $data['face_descriptor']
+                );
 
-            if (!$faceResult['match']) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Face verification failed',
-                    'data' => [
-                        'face_match_score' => $faceResult['score'],
-                        'threshold' => $faceResult['threshold']
-                    ]
-                ], 400);
+                if (!$faceResult['match']) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Face verification failed',
+                        'data' => [
+                            'face_match_score' => $faceResult['score'],
+                            'threshold' => $faceResult['threshold']
+                        ]
+                    ], 400);
+                }
+
+                $faceMatchScore = $faceResult['score'];
+                $faceMatch = true;
             }
 
             // 4. GPS Validation
@@ -99,10 +114,10 @@ class AttendanceController extends Controller
             $attendance = $this->attendanceService->create([
                 'user_id' => $user->id,
                 'session_id' => $data['session_id'],
-                'qr_code_id' => $qrValidation['qr_code_id'],
+                'qr_code_id' => $qrCodeId,
                 'verified_at' => now(),
-                'face_match_score' => $faceResult['score'],
-                'face_match' => true,
+                'face_match_score' => $faceMatchScore ?? 0,
+                'face_match' => $faceMatch,
                 'gps_valid' => $locationResult['valid'],
                 'location_lat' => $data['location']['lat'],
                 'location_lng' => $data['location']['lng'],
@@ -156,7 +171,7 @@ class AttendanceController extends Controller
     {
         $user = auth()->user();
         $filters = $request->only(['session_id', 'start_date', 'end_date']);
-        
+
         $attendances = $this->attendanceService->getUserHistory($user->id, $filters);
 
         return response()->json([

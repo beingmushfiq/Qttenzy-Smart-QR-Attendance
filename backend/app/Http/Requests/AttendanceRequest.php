@@ -21,15 +21,31 @@ class AttendanceRequest extends FormRequest
     {
         return [
             'session_id' => ['required', 'integer', 'exists:sessions,id'],
-            'qr_code' => ['required', 'string', 'max:255'],
-            'face_descriptor' => ['required', 'array', 'size:128'],
-            'face_descriptor.*' => ['required', 'numeric', 'between:-1,1'],
+            'qr_code' => ['nullable', 'string', 'max:255'],
+            'face_descriptor' => ['nullable', 'array', 'size:128'],
+            'face_descriptor.*' => ['nullable', 'numeric', 'between:-1,1'],
             'location' => ['required', 'array'],
             'location.lat' => ['required', 'numeric', 'between:-90,90'],
             'location.lng' => ['required', 'numeric', 'between:-180,180'],
             'location.accuracy' => ['nullable', 'numeric', 'min:0'],
             'webauthn_credential_id' => ['nullable', 'string']
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            // Ensure at least one authentication method is provided
+            if (!$this->qr_code && !$this->face_descriptor) {
+                $validator->errors()->add(
+                    'authentication',
+                    'At least one authentication method (QR code or face descriptor) is required'
+                );
+            }
+        });
     }
 
     /**
@@ -40,8 +56,8 @@ class AttendanceRequest extends FormRequest
         return [
             'session_id.required' => 'Session ID is required',
             'session_id.exists' => 'Session not found',
-            'qr_code.required' => 'QR code is required',
-            'face_descriptor.required' => 'Face descriptor is required',
+            'qr_code.string' => 'QR code must be a valid string',
+            'face_descriptor.array' => 'Face descriptor must be an array',
             'face_descriptor.size' => 'Face descriptor must have 128 values',
             'location.required' => 'Location is required',
             'location.lat.required' => 'Latitude is required',

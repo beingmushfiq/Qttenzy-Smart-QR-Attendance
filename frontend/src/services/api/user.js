@@ -12,6 +12,10 @@ export const userAPI = {
   enrollFace: async (data) => {
     return apiClient.post('/user/face-enroll', data);
   },
+
+  getFaceEnrollment: async () => {
+    return apiClient.get('/user/face-enrollment');
+  },
   
   registerWebAuthn: async (data) => {
     return apiClient.post('/user/webauthn/register', data);

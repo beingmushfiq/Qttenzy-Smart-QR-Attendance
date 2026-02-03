@@ -49,7 +49,7 @@ const Attendance = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Attendance</h1>
-          <p className="text-white/40 font-medium tracking-tight">Scan QR and mark your presence instantly</p>
+          <p className="text-white/40 font-medium tracking-tight">Choose QR scan or face authentication to mark your presence</p>
         </div>
         <button
           onClick={() => setShowScanner(true)}
@@ -125,7 +125,7 @@ const Attendance = () => {
             <div className="text-center py-20">
               <div className="text-4xl mb-4">📭</div>
               <p className="text-white/20 font-bold uppercase tracking-widest text-sm">No records found</p>
-              <p className="text-white/10 text-xs mt-2">Click "Mark Attendance" to scan a QR code</p>
+              <p className="text-white/10 text-xs mt-2">Click "Mark Attendance" to choose QR or face authentication</p>
             </div>
           )}
         </div>

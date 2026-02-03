@@ -15,7 +15,7 @@ use App\Http\Controllers\AdminController;
 */
 
 Route::prefix('v1')->group(function () {
-    
+
     // Public Routes
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);
@@ -36,7 +36,7 @@ Route::prefix('v1')->group(function () {
 
     // Protected Routes
     Route::middleware(['jwt.auth'])->group(function () {
-        
+
         // Auth
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::post('/auth/refresh', [AuthController::class, 'refresh']);
@@ -46,6 +46,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/user/profile', [UserController::class, 'profile']);
         Route::put('/user/profile', [UserController::class, 'updateProfile']);
         Route::post('/user/face-enroll', [UserController::class, 'enrollFace']);
+        Route::get('/user/face-enrollment', [UserController::class, 'getFaceEnrollment']);
         Route::post('/user/webauthn/register', [UserController::class, 'registerWebAuthn']);
 
         // Sessions
@@ -84,24 +85,24 @@ Route::prefix('v1')->group(function () {
             Route::get('/dashboard', [AdminController::class, 'dashboard']);
             Route::get('/users', [AdminController::class, 'users']);
             Route::put('/users/{id}/status', [AdminController::class, 'updateUserStatus']);
-            
+
             // Attendance Management
             Route::get('/attendances/pending', [AdminController::class, 'pendingAttendances']);
             Route::put('/attendances/{id}/approve', [AdminController::class, 'approveAttendance']);
             Route::put('/attendances/{id}/reject', [AdminController::class, 'rejectAttendance']);
             Route::put('/attendances/{id}/override', [AdminController::class, 'overrideAttendance']);
             Route::get('/attendances/{id}/logs', [AdminController::class, 'attendanceLogs']);
-            
+
             // Analytics
             Route::get('/analytics/attendance-trends', [AdminController::class, 'attendanceTrends']);
             Route::get('/analytics/session-stats', [AdminController::class, 'sessionStats']);
             Route::get('/analytics/user-summary/{userId}', [AdminController::class, 'userSummary']);
-            
+
             // Reports & Exports
             Route::get('/reports/attendance', [AdminController::class, 'attendanceReport']);
             Route::get('/reports/attendance/export', [AdminController::class, 'exportAttendanceReport']);
             Route::get('/reports/sessions/export', [AdminController::class, 'exportSessionReport']);
-            
+
             // Organization Management
             Route::get('/organizations', [App\Http\Controllers\OrganizationController::class, 'adminIndex']);
             Route::get('/organizations/{id}', [App\Http\Controllers\OrganizationController::class, 'show']);

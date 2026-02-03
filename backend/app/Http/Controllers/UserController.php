@@ -63,13 +63,91 @@ class UserController extends Controller
             ], 422);
         }
 
-        // Implementation for face enrollment
-        // Store face descriptor in database
+        $user = Auth::user();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Face enrolled successfully'
-        ], 201);
+        try {
+            // Encrypt the face descriptor
+            $faceDescriptor = json_encode($request->face_descriptor);
+            $encryptedDescriptor = encrypt($faceDescriptor);
+
+            // Check if user already has an enrollment
+            $existingEnrollment = $user->faceEnrollment;
+
+            if ($existingEnrollment) {
+                // Update existing enrollment
+                $existingEnrollment->update([
+                    'encrypted_descriptor' => $encryptedDescriptor,
+                    'image_path' => $request->image,
+                    'confidence_threshold' => 0.6,
+                    'requires_reverification' => false,
+                ]);
+
+                $enrollment = $existingEnrollment;
+            } else {
+                // Create new enrollment
+                $enrollment = \App\Models\FaceEnrollment::create([
+                    'user_id' => $user->id,
+                    'encrypted_descriptor' => $encryptedDescriptor,
+                    'image_path' => $request->image,
+                    'confidence_threshold' => 0.6,
+                    'verification_count' => 0,
+                    'requires_reverification' => false,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Face enrolled successfully',
+                'data' => [
+                    'enrollment_id' => $enrollment->id,
+                    'enrolled_at' => $enrollment->created_at,
+                    'face_enrolled' => true
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to enroll face',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get user's face enrollment data
+     */
+    public function getFaceEnrollment()
+    {
+        $user = Auth::user();
+        $enrollment = $user->faceEnrollment;
+
+        if (!$enrollment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No face enrollment found'
+            ], 404);
+        }
+
+        try {
+            // Decrypt the face descriptor
+            $decryptedDescriptor = decrypt($enrollment->encrypted_descriptor);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'face_descriptor' => json_decode($decryptedDescriptor),
+                    'enrolled_at' => $enrollment->created_at,
+                    'confidence_threshold' => $enrollment->confidence_threshold,
+                    'verification_count' => $enrollment->verification_count
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve face enrollment',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
+        }
     }
 
     /**
@@ -95,7 +173,7 @@ class UserController extends Controller
         if ($user->hasRole('organization_admin')) {
             $query->inOrganization($user->organization_id);
             // Don't list admins
-            $query->whereDoesntHave('roles', function($q) {
+            $query->whereDoesntHave('roles', function ($q) {
                 $q->where('name', 'admin');
             });
         } elseif (!$user->isAdmin()) {
@@ -104,9 +182,9 @@ class UserController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -128,7 +206,7 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $currentUser = Auth::user();
-        
+
         // Permission check
         if (!$currentUser->isAdmin() && !$currentUser->hasRole('organization_admin')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
@@ -153,7 +231,7 @@ class UserController extends Controller
             $orgId = $currentUser->organization_id;
             // Prevent creating admins
             if ($request->role === 'admin' || $request->role === 'organization_admin') {
-                 return response()->json(['success' => false, 'message' => 'Cannot create admin users'], 403);
+                return response()->json(['success' => false, 'message' => 'Cannot create admin users'], 403);
             }
         }
 
@@ -198,7 +276,7 @@ class UserController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,'.$id,
+            'email' => 'sometimes|email|unique:users,email,' . $id,
             'phone' => 'nullable|string',
             'role' => 'sometimes|exists:roles,name',
             'organization_id' => 'nullable|exists:organizations,id',
@@ -206,27 +284,27 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-           return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
-        
+
         // Prevent org admin from changing user's org
         if ($currentUser->hasRole('organization_admin') && $request->has('organization_id')) {
-             if ($request->organization_id != $currentUser->organization_id) {
-                 return response()->json(['success' => false, 'message' => 'Cannot change user organization'], 403);
-             }
+            if ($request->organization_id != $currentUser->organization_id) {
+                return response()->json(['success' => false, 'message' => 'Cannot change user organization'], 403);
+            }
         }
 
         $data = $request->only(['name', 'email', 'phone', 'is_active', 'role', 'organization_id']);
         if ($request->has('password') && !empty($request->password)) {
             $data['password'] = Hash::make($request->password);
         }
-        
+
         $user->update($data);
-        
+
         if ($request->has('role')) {
             // Sync roles
-             $user->roles()->sync([]); 
-             $user->assignRole($request->role);
+            $user->roles()->sync([]);
+            $user->assignRole($request->role);
         }
 
         return response()->json([
@@ -246,10 +324,10 @@ class UserController extends Controller
 
         if ($currentUser->hasRole('organization_admin')) {
             if ($user->organization_id !== $currentUser->organization_id || $user->isAdmin()) {
-                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
         } elseif (!$currentUser->isAdmin()) {
-             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         $user->delete();
