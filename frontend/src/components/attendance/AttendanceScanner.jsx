@@ -9,16 +9,20 @@ import { userAPI } from '../../services/api/user';
 import { useAuthStore } from '../../store/authStore';
 import GlassCard from '../common/GlassCard';
 
-const AttendanceScanner = ({ sessionId }) => {
+const AttendanceScanner = ({ sessionId: initialSessionId }) => {
   const [step, setStep] = useState('select'); // select -> authenticate -> gps -> submit
   const [authMethod, setAuthMethod] = useState(null); // 'qr' or 'face'
   const [qrCode, setQrCode] = useState(null);
   const [faceResult, setFaceResult] = useState(null);
   const [enrolledDescriptor, setEnrolledDescriptor] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [scannedSessionId, setScannedSessionId] = useState(null);
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { location, error: locationError, getCurrentLocation, loading: locationLoading } = useGeolocation();
+
+  // Use either the prop or the one from the QR scan
+  const activeSessionId = initialSessionId || scannedSessionId;
 
   useEffect(() => {
     const fetchEnrolledFace = async () => {
@@ -50,12 +54,35 @@ const AttendanceScanner = ({ sessionId }) => {
   };
 
   const handleQRScanned = (code) => {
+    // Attempt to parse session ID from QR code if not already present
+    if (!initialSessionId) {
+       // Format: SESSION_{sessionId}_{timestamp}_{random}
+       const parts = code.split('_');
+       if (parts.length >= 2 && parts[0] === 'SESSION') {
+          const id = parseInt(parts[1]);
+          if (!isNaN(id)) {
+            setScannedSessionId(id);
+          } else {
+             toast.error('Invalid QR Code format: Could not extract Session ID');
+             return;
+          }
+       } else {
+          toast.error('Invalid QR Code format');
+          return;
+       }
+    }
+
     setQrCode(code);
     setStep('gps');
     getCurrentLocation();
   };
 
   const handleFaceVerified = (result) => {
+    if (!activeSessionId) {
+        toast.error('Session ID missing. Please scan QR code first to identify session, or select a session from the list.');
+        return;
+    }
+
     setFaceResult(result);
     if (result.verified) {
       setStep('gps');
@@ -69,10 +96,15 @@ const AttendanceScanner = ({ sessionId }) => {
       return;
     }
 
+    if (!activeSessionId) {
+         toast.error('Session ID is required.');
+         return;
+    }
+
     setSubmitting(true);
     try {
       const payload = {
-        session_id: sessionId,
+        session_id: activeSessionId,
         location: {
           lat: location.lat,
           lng: location.lng,
@@ -100,7 +132,19 @@ const AttendanceScanner = ({ sessionId }) => {
 
   const authMethods = [
     { id: 'qr', icon: '📱', label: 'Scan QR', desc: 'Scan session QR code' },
-    { id: 'face', icon: '👤', label: 'Face Auth', desc: 'Verify with face recognition', disabled: !enrolledDescriptor },
+    // If we don't have a session ID yet, we can't use Face Auth as defined in the current flow
+    // unless we change the flow to allow selecting session later. 
+    // For now, if no session ID is passed, we partially disable Face Auth or warn user 
+    // BUT the user might want to scan QR first then do face auth? 
+    // Actually, if they scan QR, they are doing QR auth.
+    // So if they want to do Face Auth, they MUST have selected a session first.
+    { 
+      id: 'face', 
+      icon: '👤', 
+      label: 'Face Auth', 
+      desc: 'Verify with face recognition', 
+      disabled: !enrolledDescriptor || (!initialSessionId && !scannedSessionId) // Disable if no session ID (and extracted one isn't there yet, which is impossible at select step)
+    },
   ];
 
   return (
@@ -120,6 +164,15 @@ const AttendanceScanner = ({ sessionId }) => {
         <div className="relative z-10">
           {step === 'select' && (
             <div className="py-8 space-y-6 animate-in fade-in duration-500">
+               {!initialSessionId && (
+                  <div className="mx-auto max-w-md bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-4">
+                     <p className="text-yellow-200 text-sm text-center">
+                        Note: To use Face Authentication, please select a specific session from the list first. 
+                        Otherwise, scan the Session QR code.
+                     </p>
+                  </div>
+               )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {authMethods.map((method) => (
                   <button
@@ -139,7 +192,9 @@ const AttendanceScanner = ({ sessionId }) => {
                       <h3 className="text-xl font-bold text-white tracking-tight">{method.label}</h3>
                       <p className="text-white/40 text-sm">{method.desc}</p>
                       {method.disabled && (
-                        <p className="text-red-400 text-xs mt-2">Not enrolled</p>
+                        <p className="text-red-400 text-xs mt-2">
+                           {!enrolledDescriptor ? 'Not enrolled' : 'Select Session First'}
+                        </p>
                       )}
                     </div>
                   </button>
