@@ -41,6 +41,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::post('/auth/refresh', [AuthController::class, 'refresh']);
         Route::get('/auth/me', [AuthController::class, 'me']);
+        Route::get('/admin/dashboard', [AdminController::class, 'dashboard']); // Accessible to all auth users (controller handles scoping)
 
         // User
         Route::get('/user/profile', [UserController::class, 'profile']);
@@ -77,9 +78,9 @@ Route::prefix('v1')->group(function () {
         Route::put('/users/{id}', [UserController::class, 'update'])->middleware('permission:edit_users');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->middleware('permission:delete_users');
 
-        // Admin
+        // Admin Routes
         Route::prefix('admin')->middleware('role:admin')->group(function () {
-            Route::get('/dashboard', [AdminController::class, 'dashboard']);
+            // Dashboard route moved to general section to support org admins
             Route::get('/users', [AdminController::class, 'users']);
             Route::put('/users/{id}/status', [AdminController::class, 'updateUserStatus']);
 

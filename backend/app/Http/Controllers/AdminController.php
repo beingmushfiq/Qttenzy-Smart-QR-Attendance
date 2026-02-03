@@ -28,13 +28,23 @@ class AdminController extends Controller
      */
     public function dashboard()
     {
+        $user = auth()->user();
+        $orgId = $user->hasRole('organization_admin') ? $user->organization_id : null;
+
         $stats = [
-            'total_users' => User::count(),
-            'total_students' => User::withRole('student')->count(),
-            'total_teachers' => User::withRole('teacher')->count(),
-            'pending_approvals' => User::where('is_approved', false)->count(),
-            'pending_attendances' => Attendance::where('status', 'pending')->count(),
-            'today_attendances' => Attendance::whereDate('verified_at', today())->count(),
+            'total_users' => User::when($orgId, fn($q) => $q->where('organization_id', $orgId))->count(),
+            'total_students' => User::withRole('student')->when($orgId, fn($q) => $q->where('organization_id', $orgId))->count(),
+            'total_teachers' => User::withRole('teacher')->when($orgId, fn($q) => $q->where('organization_id', $orgId))->count(),
+            'pending_approvals' => User::where('is_approved', false)->when($orgId, fn($q) => $q->where('organization_id', $orgId))->count(),
+            'pending_attendances' => Attendance::where('status', 'pending')
+                ->when($orgId, fn($q) => $q->whereHas('session', fn($sq) => $sq->where('organization_id', $orgId)))
+                ->count(),
+            'today_attendances' => Attendance::whereDate('verified_at', today())
+                ->when($orgId, fn($q) => $q->whereHas('session', fn($sq) => $sq->where('organization_id', $orgId)))
+                ->count(),
+            'today_sessions' => \App\Models\Session::whereDate('start_time', today())
+                ->when($orgId, fn($q) => $q->where('organization_id', $orgId))
+                ->count(),
         ];
 
         return response()->json([
