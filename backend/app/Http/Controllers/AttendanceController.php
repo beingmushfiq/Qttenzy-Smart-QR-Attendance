@@ -65,18 +65,18 @@ class AttendanceController extends Controller
                 $session = \App\Models\Session::findOrFail($data['session_id']);
             }
 
-            // 2. Check for duplicate attendance
-            $existingAttendance = $this->attendanceService->checkDuplicate(
-                $user->id,
-                $data['session_id']
-            );
+            // 2. Check for duplicate attendance (Disabled for demo - let admin approve/reject)
+            // $existingAttendance = $this->attendanceService->checkDuplicate(
+            //     $user->id,
+            //     $data['session_id']
+            // );
 
-            if ($existingAttendance) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Attendance already recorded for this session'
-                ], 409);
-            }
+            // if ($existingAttendance) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Attendance already recorded for this session'
+            //     ], 409);
+            // }
 
             // 3. Face Verification (if provided) - Optional for demo
             if (isset($data['face_descriptor'])) {
@@ -103,7 +103,7 @@ class AttendanceController extends Controller
                 );
             }
 
-            // 5. Create Attendance Record
+            // 5. Create Attendance Record (Always succeeds - pending admin approval)
             $attendance = $this->attendanceService->create([
                 'user_id' => $user->id,
                 'session_id' => $data['session_id'],
@@ -122,7 +122,7 @@ class AttendanceController extends Controller
                 ],
                 'webauthn_used' => isset($data['webauthn_credential_id']),
                 'verification_method' => $faceMatch ? ($locationResult['valid'] ? 'qr_face_gps' : 'qr_face') : 'qr_only',
-                'status' => 'verified'
+                'status' => 'pending' // Always pending for admin approval in demo mode
             ]);
 
             // 6. Log Location (if provided)
