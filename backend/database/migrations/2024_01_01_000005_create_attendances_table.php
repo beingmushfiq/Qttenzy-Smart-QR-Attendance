@@ -4,15 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('attendances', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('session_id')->constrained('sessions')->onDelete('cascade');
-            $table->foreignId('qr_code_id')->constrained('qr_codes')->onDelete('cascade');
+            $table->foreignId('qr_code_id')->nullable()->constrained('qr_codes')->onDelete('set null');
             $table->dateTime('verified_at');
             $table->decimal('face_match_score', 5, 2)->nullable();
             $table->boolean('face_match')->default(false);
