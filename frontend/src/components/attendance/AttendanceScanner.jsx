@@ -73,7 +73,9 @@ const AttendanceScanner = ({ sessionId: initialSessionId }) => {
     }
 
     setQrCode(code);
-    setStep('gps');
+    // For demo: Skip GPS and go directly to submit
+    setStep('submit');
+    // Try to get location but don't block on it
     getCurrentLocation();
   };
 
@@ -91,26 +93,25 @@ const AttendanceScanner = ({ sessionId: initialSessionId }) => {
   };
 
   const handleSubmit = async () => {
-    if (!location) {
-      toast.error('Please wait for GPS location');
-      return;
-    }
-
     if (!activeSessionId) {
-         toast.error('Session ID is required.');
-         return;
+       toast.error('Session ID is required.');
+       return;
     }
 
     setSubmitting(true);
     try {
       const payload = {
-        session_id: activeSessionId,
-        location: {
+        session_id: activeSessionId
+      };
+
+      // Add location if available
+      if (location && location.lat && location.lng) {
+        payload.location = {
           lat: location.lat,
           lng: location.lng,
           accuracy: location.accuracy
-        }
-      };
+        };
+      }
 
       // Add authentication data based on selected method
       if (authMethod === 'qr' && qrCode) {

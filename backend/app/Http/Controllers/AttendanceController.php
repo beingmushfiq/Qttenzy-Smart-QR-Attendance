@@ -78,37 +78,30 @@ class AttendanceController extends Controller
                 ], 409);
             }
 
-            // 3. Face Verification (if provided)
+            // 3. Face Verification (if provided) - Optional for demo
             if (isset($data['face_descriptor'])) {
                 $faceResult = $this->faceService->verifyFace(
                     $user->id,
                     $data['face_descriptor']
                 );
 
-                if (!$faceResult['match']) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Face verification failed',
-                        'data' => [
-                            'face_match_score' => $faceResult['score'],
-                            'threshold' => $faceResult['threshold']
-                        ]
-                    ], 400);
-                }
-
+                // For demo: Don't block submission on face mismatch, just log it
                 $faceMatchScore = $faceResult['score'];
-                $faceMatch = true;
+                $faceMatch = $faceResult['match'];
             }
 
-            // 4. GPS Validation
-            $locationResult = $this->locationService->validateLocation(
-                $data['location']['lat'],
-                $data['location']['lng'],
-                $session->location_lat,
-                $session->location_lng,
-                $session->radius_meters
-            );
+            // 4. GPS Validation (Optional for demo)
+            $locationResult = ['valid' => true, 'distance' => 0];
+
+            if (isset($data['location']) && isset($data['location']['lat']) && isset($data['location']['lng'])) {
+                $locationResult = $this->locationService->validateLocation(
+                    $data['location']['lat'],
+                    $data['location']['lng'],
+                    $session->location_lat ?? 0,
+                    $session->location_lng ?? 0,
+                    $session->radius_meters ?? 10000
+                );
+            }
 
             // 5. Create Attendance Record
             $attendance = $this->attendanceService->create([
@@ -119,8 +112,8 @@ class AttendanceController extends Controller
                 'face_match_score' => $faceMatchScore ?? 0,
                 'face_match' => $faceMatch,
                 'gps_valid' => $locationResult['valid'],
-                'location_lat' => $data['location']['lat'],
-                'location_lng' => $data['location']['lng'],
+                'location_lat' => $data['location']['lat'] ?? null,
+                'location_lng' => $data['location']['lng'] ?? null,
                 'distance_from_venue' => $locationResult['distance'],
                 'ip_address' => $request->ip(),
                 'device_info' => [
@@ -132,12 +125,14 @@ class AttendanceController extends Controller
                 'status' => 'verified'
             ]);
 
-            // 6. Log Location
-            $this->locationService->logLocation(
-                $user->id,
-                $data['session_id'],
-                $data['location']
-            );
+            // 6. Log Location (if provided)
+            if (isset($data['location']) && isset($data['location']['lat']) && isset($data['location']['lng'])) {
+                $this->locationService->logLocation(
+                    $user->id,
+                    $data['session_id'],
+                    $data['location']
+                );
+            }
 
             DB::commit();
 
