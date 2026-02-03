@@ -195,9 +195,9 @@ const AttendanceScanner = ({ sessionId: initialSessionId }) => {
                    <div className="relative">
                        <button 
                            onClick={() => { setAuthMethod('face'); setStep('face'); }}
-                           disabled={!sessionData.id}
+                           disabled={!sessionData.id || !enrolledDescriptor}
                            className={`w-full group relative overflow-hidden rounded-3xl border p-8 transition-all hover:scale-[1.02] active:scale-[0.98]
-                               ${sessionData.id 
+                               ${(sessionData.id && enrolledDescriptor)
                                    ? 'bg-gradient-to-br from-premium-primary/10 to-premium-accent/5 border-premium-primary/20 hover:border-premium-primary/50 cursor-pointer' 
                                    : 'bg-white/2 border-white/5 opacity-50 cursor-not-allowed'}`}
                        >
@@ -208,18 +208,26 @@ const AttendanceScanner = ({ sessionId: initialSessionId }) => {
                                    <span className="text-sm text-white/50">Fast & Secure biometric check</span>
                                </div>
                                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors
-                                   ${sessionData.id ? 'bg-premium-primary/20 text-premium-primary group-hover:bg-premium-primary group-hover:text-white' : 'bg-white/5'}`}>
-                                   {sessionData.id ? '➔' : '🔒'}
+                                   ${(sessionData.id && enrolledDescriptor) ? 'bg-premium-primary/20 text-premium-primary group-hover:bg-premium-primary group-hover:text-white' : 'bg-white/5'}`}>
+                                   {(sessionData.id && enrolledDescriptor) ? '➔' : '🔒'}
                                </div>
                            </div>
                        </button>
-                       {!sessionData.id && (
-                           <div className="absolute -bottom-6 left-0 right-0 text-center">
-                               <span className="text-xs text-red-400 bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
-                                   Select a session first to use Face ID
+                       <div className="absolute -bottom-6 left-0 right-0 text-center space-y-1">
+                           {!sessionData.id && (
+                               <span className="block text-xs text-red-400 bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm mx-auto w-max">
+                                   Select a session first
                                </span>
-                           </div>
-                       )}
+                           )}
+                           {!enrolledDescriptor && (
+                               <button 
+                                   onClick={() => navigate('/profile')} // Assuming profile has enrollment
+                                   className="block text-xs text-yellow-400 bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm mx-auto w-max hover:text-yellow-300 underline"
+                               >
+                                   Face ID not set up. Click to Enroll.
+                               </button>
+                           )}
+                       </div>
                    </div>
 
                </div>

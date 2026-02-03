@@ -24,9 +24,9 @@ class AttendanceRequest extends FormRequest
             'qr_code' => ['nullable', 'string', 'max:255'],
             'face_descriptor' => ['nullable', 'array', 'size:128'],
             'face_descriptor.*' => ['nullable', 'numeric', 'between:-1,1'],
-            'location' => ['required', 'array'],
-            'location.lat' => ['required', 'numeric', 'between:-90,90'],
-            'location.lng' => ['required', 'numeric', 'between:-180,180'],
+            'location' => ['nullable', 'array'],
+            'location.lat' => ['required_with:location', 'numeric', 'between:-90,90'],
+            'location.lng' => ['required_with:location', 'numeric', 'between:-180,180'],
             'location.accuracy' => ['nullable', 'numeric', 'min:0'],
             'webauthn_credential_id' => ['nullable', 'string']
         ];

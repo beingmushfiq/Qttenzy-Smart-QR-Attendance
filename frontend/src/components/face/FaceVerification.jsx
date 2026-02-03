@@ -54,95 +54,125 @@ const FaceVerification = ({ enrolledDescriptor, onVerify, onClose }) => {
   };
 
   if (loading) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6">
-          <p>Loading face recognition models...</p>
-        </div>
-      </div>
-    );
+      return (
+          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center">
+              <div className="text-white text-center">
+                  <div className="w-12 h-12 border-4 border-white/20 border-t-premium-primary rounded-full animate-spin mx-auto mb-4"></div>
+                  <p>Loading face recognition models...</p>
+              </div>
+          </div>
+      );
   }
 
   if (error) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6">
-          <p className="text-red-500">{error}</p>
-          <button onClick={onClose} className="mt-4 px-4 py-2 bg-gray-500 text-white rounded">
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!modelsLoaded) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6">
-          <p>Failed to load models</p>
-        </div>
-      </div>
-    );
+      return (
+          <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 max-w-sm w-full border border-white/10 text-center">
+                  <div className="text-red-400 text-4xl mb-4">⚠️</div>
+                  <p className="text-red-200 mb-6">{error}</p>
+                  <button onClick={onClose} className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white transition-all">
+                      Close
+                  </button>
+              </div>
+          </div>
+      );
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Face Verification</h2>
-          <button
+    <div className="fixed inset-0 z-50 bg-black text-white flex flex-col justify-center items-center p-4 animate-in fade-in duration-300">
+      {/* Background Overlay */}
+      <div className="absolute inset-0 bg-gradient-radial from-premium-primary/20 to-black opacity-40 pointer-events-none"></div>
+      
+      <div className="bg-dark/90 backdrop-blur-xl border border-white/10 rounded-3xl p-6 max-w-lg w-full relative shadow-2xl">
+        <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors z-20"
+        >
             ✕
-          </button>
+        </button>
+
+        <div className="text-center mb-6">
+             <h2 className="text-2xl font-bold tracking-tight mb-2">Face Verification</h2>
+             <p className="text-white/60 text-sm">Verify your identity to proceed</p>
         </div>
 
-        <div className="relative bg-black rounded-lg overflow-hidden">
+        <div className="relative w-full aspect-square sm:aspect-video bg-black rounded-2xl overflow-hidden mb-6 border-2 border-white/10 shadow-inner group">
           <video 
             ref={videoRef} 
             autoPlay 
             playsInline 
-            className="w-full h-auto"
+            muted
+            className="w-full h-full object-cover transform scale-x-[-1]"
           />
           <canvas ref={canvasRef} className="hidden" />
+          
+          {/* Animated Scanning Overlay */}
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div className={`w-48 h-48 sm:w-64 sm:h-64 border-2 rounded-full relative transition-colors duration-500
+                  ${matchResult?.match ? 'border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.5)]' : 
+                    matchResult?.match === false ? 'border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.5)]' : 
+                    'border-premium-primary/50'}`}>
+                  
+                  {!matchResult && (
+                      <>
+                        <div className="absolute inset-0 border-t-4 border-premium-primary rounded-full animate-spin-slow opacity-50"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-2 h-2 bg-premium-primary rounded-full animate-ping"></div>
+                        </div>
+                      </>
+                  )}
+              </div>
+          </div>
+          
+          {/* Status Overlay */}
+          {verifying && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
+                  <div className="text-white font-bold tracking-widest uppercase animate-pulse">Verifying...</div>
+              </div>
+          )}
         </div>
 
+        {/* Result Feedback */}
         {matchResult && (
-          <div className={`mt-4 p-3 rounded ${
+          <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 animate-in slide-in-from-top-2 ${
             matchResult.match 
-              ? 'bg-green-100 border border-green-400 text-green-700' 
-              : 'bg-red-100 border border-red-400 text-red-700'
+              ? 'bg-green-500/10 border-green-500/30 text-green-400' 
+              : 'bg-red-500/10 border-red-500/30 text-red-400'
           }`}>
-            <p className="font-semibold">
-              Match Score: {matchResult.score.toFixed(2)}%
-            </p>
-            <p className="text-sm mt-1">
-              {matchResult.match ? '✓ Face Verified' : '✗ Face Not Matched'}
-            </p>
+            <span className="text-2xl">{matchResult.match ? '✅' : '❌'}</span>
+            <div>
+                <p className="font-bold">
+                  {matchResult.match ? 'Identity Verified' : 'Verification Failed'}
+                </p>
+                <p className="text-xs opacity-80">
+                  Match Score: {matchResult.score.toFixed(1)}%
+                </p>
+            </div>
           </div>
         )}
 
-        <div className="mt-4 flex gap-2">
+        <div className="flex gap-4">
           <button
             onClick={handleVerify}
-            disabled={verifying}
-            className="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={verifying || !modelsLoaded}
+            className="flex-1 bg-gradient-premium text-white font-bold py-3.5 rounded-xl shadow-lg shadow-premium-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100"
           >
-            {verifying ? 'Verifying...' : 'Verify Face'}
+            {verifying ? 'Scanning...' : matchResult?.match ? 'Verified' : 'Verify Face'}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-500 text-white py-2 rounded hover:bg-gray-600"
+            className="px-6 py-3.5 rounded-xl bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all font-semibold"
           >
-            Close
+            Cancel
           </button>
         </div>
+        
+        {!modelsLoaded && (
+            <p className="text-center text-xs text-white/30 mt-4 animate-pulse">Initializing face recognition models...</p>
+        )}
       </div>
     </div>
   );
 };
 
 export default FaceVerification;
-
