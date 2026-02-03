@@ -50,11 +50,7 @@ class RegisterRequest extends FormRequest
                 'required',
                 'string',
                 'confirmed',
-                Password::min(8)
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols()
-                    ->uncompromised()
+                'min:6'
             ],
             'role' => [
                 'nullable',
@@ -112,6 +108,7 @@ class RegisterRequest extends FormRequest
             'phone.regex' => 'Please provide a valid phone number (10-15 digits).',
             'password.required' => 'Password is required.',
             'password.confirmed' => 'Password confirmation does not match.',
+            'password.min' => 'Password must be at least 6 characters.',
             'role.in' => 'Invalid role selected.',
             'organization_id.exists' => 'Selected organization does not exist.',
             'organization_id.required_without' => 'Please select an organization or create a new one.',

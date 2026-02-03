@@ -244,9 +244,9 @@ const Register = () => {
                   type="password"
                   name="password"
                   required
-                  minLength="8"
+                  minLength="6"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
-                  placeholder="Password (min 8 chars)"
+                  placeholder="Password (min 6 chars)"
                   value={formData.password}
                   onChange={handleChange}
                 />
@@ -258,7 +258,7 @@ const Register = () => {
                   type="password"
                   name="password_confirmation"
                   required
-                  minLength="8"
+                  minLength="6"
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-premium-primary/50 focus:border-premium-primary/50 transition-all outline-none text-sm sm:text-base"
                   placeholder="Confirm Password"
                   value={formData.password_confirmation}
