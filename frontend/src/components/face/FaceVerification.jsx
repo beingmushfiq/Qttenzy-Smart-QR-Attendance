@@ -55,7 +55,7 @@ const FaceVerification = ({ enrolledDescriptor, onVerify, onClose }) => {
 
   if (loading) {
       return (
-          <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center">
+          <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center">
               <div className="text-white text-center">
                   <div className="w-12 h-12 border-4 border-white/20 border-t-premium-primary rounded-full animate-spin mx-auto mb-4"></div>
                   <p>Loading face recognition models...</p>
@@ -79,7 +79,7 @@ const FaceVerification = ({ enrolledDescriptor, onVerify, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black text-white flex flex-col justify-center items-center p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[60] bg-black text-white flex flex-col justify-center items-center p-4 animate-in fade-in duration-300">
       {/* Background Overlay */}
       <div className="absolute inset-0 bg-gradient-radial from-premium-primary/20 to-black opacity-40 pointer-events-none"></div>
       

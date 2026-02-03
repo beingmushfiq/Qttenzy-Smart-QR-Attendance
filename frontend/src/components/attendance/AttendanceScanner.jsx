@@ -19,7 +19,7 @@ const AttendanceScanner = ({ sessionId: initialSessionId }) => {
 
   const navigate = useNavigate();
   const { location, getCurrentLocation } = useGeolocation();
-  const { modelsLoaded, captureFace, compareFaces } = useFaceRecognition();
+  const { modelsLoaded, captureFace, compareFaces, videoRef, canvasRef } = useFaceRecognition();
   
   // Load enrolled face on mount
   useEffect(() => {
@@ -42,6 +42,22 @@ const AttendanceScanner = ({ sessionId: initialSessionId }) => {
           setSessionData({ id: initialSessionId });
       }
   }, [initialSessionId]);
+
+  // Initialize camera when entering face step
+  useEffect(() => {
+    if (step === 'face' && modelsLoaded && videoRef.current) {
+        navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } 
+        })
+        .then(stream => {
+            videoRef.current.srcObject = stream;
+        })
+        .catch(err => {
+            console.error("Camera Error:", err);
+            toast.error("Could not access camera");
+        });
+    }
+  }, [step, modelsLoaded, videoRef]);
 
   const handleQRScan = (data) => {
     // Expected: SESSION_{id}_... or just {id}
@@ -260,7 +276,7 @@ const AttendanceScanner = ({ sessionId: initialSessionId }) => {
                             Use the hook's videoRef directly on a video element. 
                         */}
                        <video 
-                           ref={useFaceRecognition().videoRef} // This might be tricky if hook creates new ref. 
+                           ref={videoRef}
                            // Better: AttendanceScanner uses the hook, passes ref here.
                            // Actually the hook exports videoRef. We need to attach it.
                            // BUT useFaceRecognition is a hook, so we need to initialize it in this component 
@@ -269,7 +285,7 @@ const AttendanceScanner = ({ sessionId: initialSessionId }) => {
                            className="w-full h-full object-cover transform scale-x-[-1]"
                        />
                        
-                       <canvas ref={useFaceRecognition().canvasRef} className="hidden" />
+                       <canvas ref={canvasRef} className="hidden" />
 
                        {/* Face Overlay */}
                        <div className="absolute inset-0 border-[3px] border-dashed border-white/20 rounded-full animate-spin-slow-reverse"></div>
