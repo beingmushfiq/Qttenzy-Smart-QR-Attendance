@@ -209,6 +209,8 @@ const OrgUsers = () => {
                                             onChange={(e) => setFormData({...formData, password: e.target.value})}
                                             className="w-full px-4 py-2.5 sm:py-2 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-premium-primary text-sm sm:text-base"
                                             required={!editingId}
+                                            minLength="6"
+                                            placeholder="Min 6 characters"
                                         />
                                     </div>
                                 )}
