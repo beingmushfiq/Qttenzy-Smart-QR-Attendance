@@ -57,7 +57,7 @@ const AttendanceScanner = ({ sessionId }) => {
 
   const handleFaceVerified = (result) => {
     setFaceResult(result);
-    if (result.match) {
+    if (result.verified) {
       setStep('gps');
       getCurrentLocation();
     }
@@ -85,9 +85,6 @@ const AttendanceScanner = ({ sessionId }) => {
         payload.qr_code = qrCode;
       } else if (authMethod === 'face' && enrolledDescriptor) {
         payload.face_descriptor = enrolledDescriptor;
-      } else {
-        toast.error('Authentication data missing');
-        return;
       }
 
       await attendanceAPI.verify(payload);
@@ -111,52 +108,60 @@ const AttendanceScanner = ({ sessionId }) => {
       <div className="text-center">
         <h2 className="text-3xl font-extrabold text-white mb-2 tracking-tight">Mark Attendance</h2>
         <p className="text-white/40 font-medium tracking-tight">
-          {step === 'select' ? 'Choose your authentication method' : 'Multi-factor biometric attendance check'}
+          {step === 'select' && 'Choose your authentication method'}
+          {step === 'authenticate' && `Complete ${authMethod === 'qr' ? 'QR' : 'face'} authentication`}
+          {step === 'gps' && 'Verify your location'}
         </p>
       </div>
 
       <GlassCard className="border border-white/10 relative overflow-hidden">
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-premium-primary/10 blur-[60px]"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-premium-primary/5 via-transparent to-premium-accent/5 pointer-events-none"></div>
         
         <div className="relative z-10">
           {step === 'select' && (
             <div className="py-8 space-y-6 animate-in fade-in duration-500">
-              <h3 className="text-center text-white/60 font-bold uppercase tracking-widest text-xs mb-8">
-                Select Authentication Method
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {authMethods.map((method) => (
                   <button
                     key={method.id}
                     onClick={() => !method.disabled && handleMethodSelect(method.id)}
                     disabled={method.disabled}
-                    className={`p-6 rounded-2xl border-2 transition-all duration-300 ${
+                    className={`group relative p-8 rounded-3xl border-2 transition-all duration-300 ${
                       method.disabled
-                        ? 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
-                        : 'bg-white/5 border-white/20 hover:border-premium-primary hover:bg-premium-primary/10 hover:scale-105 active:scale-95'
+                        ? 'border-white/5 bg-white/[0.02] cursor-not-allowed opacity-40'
+                        : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-premium-primary/30 hover:scale-105 cursor-pointer'
                     }`}
                   >
-                    <div className="text-5xl mb-4">{method.icon}</div>
-                    <h4 className="text-white font-bold text-lg mb-1">{method.label}</h4>
-                    <p className="text-white/40 text-sm">{method.desc}</p>
-                    {method.disabled && (
-                      <p className="text-red-400 text-xs mt-2">Face not enrolled</p>
-                    )}
+                    <div className="text-center space-y-4">
+                      <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform duration-300">
+                        {method.icon}
+                      </div>
+                      <h3 className="text-xl font-bold text-white tracking-tight">{method.label}</h3>
+                      <p className="text-white/40 text-sm">{method.desc}</p>
+                      {method.disabled && (
+                        <p className="text-red-400 text-xs mt-2">Not enrolled</p>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>
-              <button
-                onClick={() => navigate('/sessions')}
-                className="w-full mt-6 px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-all font-bold"
-              >
-                Cancel
-              </button>
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => navigate('/attendance')}
+                  className="text-white/40 hover:text-white transition-colors text-sm font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 
           {step === 'authenticate' && authMethod === 'qr' && (
             <div className="animate-in fade-in duration-500">
-              <QRScanner onScan={handleQRScanned} onClose={() => setStep('select')} />
+              <QRScanner
+                onScan={handleQRScanned}
+                onClose={() => setStep('select')}
+              />
             </div>
           )}
 
@@ -174,23 +179,29 @@ const AttendanceScanner = ({ sessionId }) => {
             <div className="py-10 text-center animate-in slide-in-from-bottom-4 duration-500">
               {locationLoading ? (
                 <div className="space-y-6">
-                  <div className="relative w-20 h-20 mx-auto">
-                    <div className="absolute inset-0 border-4 border-white/5 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-t-premium-primary border-transparent rounded-full animate-spin"></div>
+                  <div className="relative w-24 h-24 mx-auto">
+                    <div className="absolute inset-0 rounded-full border-4 border-premium-primary/20"></div>
+                    <div className="absolute inset-0 rounded-full border-4 border-t-premium-primary animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center text-3xl">📍</div>
                   </div>
-                  <p className="text-white font-bold tracking-tight">Syncing GPS Coordinates...</p>
+                  <p className="text-white font-bold tracking-tight">Acquiring GPS Location...</p>
+                  <p className="text-white/40 text-sm">Please ensure location services are enabled</p>
                 </div>
               ) : locationError ? (
                 <div className="space-y-6">
-                  <div className="w-20 h-20 bg-red-400/10 text-red-400 rounded-3xl flex items-center justify-center text-4xl mx-auto border border-red-400/20">⚠</div>
-                  <p className="text-red-400 font-bold">{locationError}</p>
-                  <button onClick={getCurrentLocation} className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-all font-bold">
-                    Retry Location Sync
+                  <div className="text-6xl">⚠️</div>
+                  <p className="text-red-400 font-bold">Location Error</p>
+                  <p className="text-white/60 text-sm max-w-md mx-auto">{locationError}</p>
+                  <button
+                    onClick={getCurrentLocation}
+                    className="px-8 py-3 rounded-2xl bg-premium-primary/20 border border-premium-primary/30 text-premium-primary font-bold hover:bg-premium-primary/30 transition-all"
+                  >
+                    Retry
                   </button>
                 </div>
               ) : location ? (
-                <div className="space-y-8">
-                  <div className="w-24 h-24 bg-premium-accent/10 text-premium-accent rounded-[2rem] flex items-center justify-center text-4xl mx-auto border border-premium-accent/20 animate-bounce">📍</div>
+                <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                  <div className="text-6xl">✅</div>
                   <div className="p-6 rounded-3xl bg-premium-accent/5 border border-premium-accent/10">
                     <p className="text-premium-accent font-black uppercase tracking-widest text-xs mb-1">Position Locked</p>
                     <p className="text-white font-bold tracking-tight">Accuracy: {location.accuracy?.toFixed(0)}m</p>
@@ -198,9 +209,9 @@ const AttendanceScanner = ({ sessionId }) => {
                   <button
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="w-full bg-gradient-premium text-white font-black py-4 rounded-2xl shadow-xl shadow-premium-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                    className="w-full px-8 py-4 rounded-2xl bg-gradient-premium text-white font-bold text-lg shadow-lg shadow-premium-primary/30 hover:shadow-premium-primary/50 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
-                    {submitting ? 'Authenticating Identity...' : 'Finalize Attendance'}
+                    {submitting ? 'Submitting...' : 'Submit Attendance'}
                   </button>
                 </div>
               ) : null}

@@ -15,6 +15,10 @@ export const adminAPI = {
     return apiClient.put(`/admin/users/${userId}/status`, data)
   },
 
+  deleteUser: async (userId) => {
+    return apiClient.delete(`/users/${userId}`)
+  },
+
   // Attendance Management
   getPendingAttendances: async (params) => {
     return apiClient.get('/admin/attendances/pending', { params })
@@ -26,6 +30,10 @@ export const adminAPI = {
 
   rejectAttendance: async (attendanceId, data) => {
     return apiClient.put(`/admin/attendances/${attendanceId}/reject`, data)
+  },
+
+  deleteAttendance: async (attendanceId) => {
+    return apiClient.delete(`/admin/attendances/${attendanceId}`)
   },
 
   overrideAttendance: async (attendanceId, data) => {

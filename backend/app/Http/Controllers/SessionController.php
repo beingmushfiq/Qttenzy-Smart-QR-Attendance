@@ -27,7 +27,7 @@ class SessionController extends Controller
         $user = auth()->user();
         $query = Session::with(['creator', 'organization']);
 
-        // Scope to organization for org admin
+        // Scope to organization for org admin (Super Admins see all)
         if ($user->hasRole('organization_admin')) {
             $query->inOrganization($user->organization_id);
         }
@@ -110,7 +110,7 @@ class SessionController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'start_time' => 'required|date|after:now',
+            'start_time' => 'required|date', // Removed strict after:now to allow creating sessions that start immediately
             'end_time' => 'required|date|after:start_time',
             'location_lat' => 'required|numeric|between:-90,90',
             'location_lng' => 'required|numeric|between:-180,180',
@@ -118,7 +118,7 @@ class SessionController extends Controller
             'radius_meters' => 'nullable|integer|min:10|max:10000',
             'session_type' => 'required|in:admin_approved,pre_registered,open',
             'requires_payment' => 'nullable|boolean',
-            'payment_amount' => 'required_if:requires_payment,true|numeric|min:0',
+            'payment_amount' => 'nullable|numeric|min:0|required_if:requires_payment,true',
             'max_attendees' => 'nullable|integer|min:1',
             'recurrence_type' => 'nullable|in:one_time,daily,weekly,monthly',
             'recurrence_end_date' => 'required_if:recurrence_type,daily,weekly,monthly|nullable|date|after:start_time',
@@ -190,8 +190,8 @@ class SessionController extends Controller
     {
         $session = Session::findOrFail($id);
 
-        // Check permission
-        if ($session->created_by !== auth()->id() && auth()->user()->role !== 'admin') {
+        // Check permission (Super Admins can edit any session)
+        if ($session->created_by !== auth()->id() && !auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized'
@@ -225,13 +225,24 @@ class SessionController extends Controller
             ], 422);
         }
 
-        $session->update($request->only([
+        // Filter update data
+        $data = $request->only([
             'title', 'description', 'start_time', 'end_time',
             'location_lat', 'location_lng', 'location_name',
             'radius_meters', 'session_type', 'status',
             'requires_payment', 'payment_amount', 'max_attendees',
             'capacity', 'allow_entry_exit', 'late_threshold_minutes'
-        ]));
+        ]);
+
+        // STRICT: Only admins/super admins can change status to/from active/completed etc.
+        // If non-admin tries to change status, simple ignore it or force it to remain what it was unless it's a draft->draft update (which is fine)
+        if (isset($data['status']) && $data['status'] !== $session->status) {
+            if (!auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin()) {
+                unset($data['status']); // Prevent status change
+            }
+        }
+
+        $session->update($data);
 
         return response()->json([
             'success' => true,
@@ -247,9 +258,9 @@ class SessionController extends Controller
     {
         $session = Session::findOrFail($id);
 
-        // Check permission
+        // Check permission (Super Admins can delete any session)
         $user = auth()->user();
-        if ($user->role !== 'admin') {
+        if (!$user->isAdmin() && !$user->isSuperAdmin()) {
             if ($user->hasRole('organization_admin')) {
                 if ($session->organization_id !== $user->organization_id) {
                     return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { adminAPI } from '../services/api/admin'
+import { sessionAPI } from '../services/api/session'
 import { toast } from 'react-toastify'
 import GlassCard from '../components/common/GlassCard'
 
@@ -201,11 +202,26 @@ const AdminUsers = () => {
                     {!user.is_approved && (
                       <button
                         onClick={() => handleApprove(user.id)}
-                        className="px-3 py-1 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-sm font-semibold transition-all"
+                        className="px-3 py-1 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-sm font-semibold transition-all mr-2"
                       >
                         Approve
                       </button>
                     )}
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this user?')) {
+                          adminAPI.deleteUser(user.id)
+                            .then(() => {
+                              toast.success('User deleted successfully')
+                              fetchUsers()
+                            })
+                            .catch(() => toast.error('Failed to delete user'))
+                        }
+                      }}
+                      className="px-3 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-sm font-semibold transition-all"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -258,6 +274,18 @@ const AdminAttendances = () => {
     }
   }
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this attendance?')) return
+
+    try {
+      await adminAPI.deleteAttendance(id)
+      toast.success('Attendance deleted')
+      fetchPendingAttendances()
+    } catch (error) {
+      toast.error('Failed to delete attendance')
+    }
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center h-64 text-white/50">Loading attendances...</div>
   }
@@ -302,6 +330,12 @@ const AdminAttendances = () => {
                   >
                     Reject
                   </button>
+                  <button
+                    onClick={() => handleDelete(attendance.id)}
+                    className="px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-semibold transition-all"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             </GlassCard>
@@ -312,8 +346,101 @@ const AdminAttendances = () => {
   )
 }
 
+// Admin Sessions Component
+const AdminSessions = () => {
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchSessions()
+  }, [])
+
+  const fetchSessions = async () => {
+    try {
+      const response = await sessionAPI.getAll()
+      setSessions(response.data || [])
+    } catch (error) {
+      toast.error('Failed to load sessions')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDelete = async (sessionId) => {
+    if (!window.confirm('Are you sure you want to delete this session?')) return
+
+    try {
+      await sessionAPI.delete(sessionId)
+      toast.success('Session deleted successfully')
+      fetchSessions()
+    } catch (error) {
+      toast.error('Failed to delete session')
+    }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64 text-white/50">Loading sessions...</div>
+  }
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      <div>
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight">
+          Session <span className="text-gradient font-black">Management</span> 📅
+        </h1>
+        <p className="text-white/40 font-medium text-sm sm:text-base">
+          View and manage all organization sessions
+        </p>
+      </div>
+
+      <GlassCard>
+        <div className="overflow-x-auto -mx-4 sm:-mx-6">
+          <div className="inline-block min-w-full align-middle px-4 sm:px-6">
+            <table className="min-w-full">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="text-left py-3 px-4 text-white/60 font-semibold">Title</th>
+                <th className="text-left py-3 px-4 text-white/60 font-semibold">Organization</th>
+                <th className="text-left py-3 px-4 text-white/60 font-semibold">Creator</th>
+                <th className="text-left py-3 px-4 text-white/60 font-semibold">Status</th>
+                <th className="text-left py-3 px-4 text-white/60 font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map((session) => (
+                <tr key={session.id} className="border-b border-white/5 hover:bg-white/5">
+                  <td className="py-3 px-4 text-white">{session.title}</td>
+                  <td className="py-3 px-4 text-white/60">{session.organization?.name || 'N/A'}</td>
+                  <td className="py-3 px-4 text-white/60">{session.creator?.name || 'N/A'}</td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                      session.is_active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                    }`}>
+                      {session.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() => handleDelete(session.id)}
+                      className="px-3 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-sm font-semibold transition-all"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            </table>
+          </div>
+        </div>
+      </GlassCard>
+    </div>
+  )
+}
+
 // Admin Reports Component  
 const AdminReports = () => {
+    // ... (rest of reports component) -> No changes needed here, keeping context
   const handleExport = async (type) => {
     try {
       const response = type === 'attendance' 
@@ -380,6 +507,7 @@ const Admin = () => {
   const navItems = [
     { path: '/admin', label: 'Dashboard', icon: '📊' },
     { path: '/admin/users', label: 'Users', icon: '👥' },
+    { path: '/admin/sessions', label: 'Sessions', icon: '📅' },
     { path: '/admin/attendances', label: 'Attendances', icon: '✋' },
     { path: '/admin/reports', label: 'Reports', icon: '📈' },
   ]
@@ -408,6 +536,7 @@ const Admin = () => {
         <Route index element={<AdminDashboard />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="sessions" element={<AdminSessions />} />
         <Route path="attendances" element={<AdminAttendances />} />
         <Route path="reports" element={<AdminReports />} />
       </Routes>

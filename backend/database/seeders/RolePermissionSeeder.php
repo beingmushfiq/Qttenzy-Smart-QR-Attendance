@@ -27,18 +27,23 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'edit_users', 'display_name' => 'Edit Users', 'group' => 'users', 'description' => 'Edit user information'],
             ['name' => 'delete_users', 'display_name' => 'Delete Users', 'group' => 'users', 'description' => 'Delete users'],
             ['name' => 'approve_users', 'display_name' => 'Approve Users', 'group' => 'users', 'description' => 'Approve pending user registrations'],
+            ['name' => 'reject_users', 'display_name' => 'Reject Users', 'group' => 'users', 'description' => 'Reject pending user registrations'],
             
             // Session Management
             ['name' => 'view_sessions', 'display_name' => 'View Sessions', 'group' => 'sessions', 'description' => 'View session list and details'],
             ['name' => 'create_sessions', 'display_name' => 'Create Sessions', 'group' => 'sessions', 'description' => 'Create new sessions'],
             ['name' => 'edit_sessions', 'display_name' => 'Edit Sessions', 'group' => 'sessions', 'description' => 'Edit session information'],
             ['name' => 'delete_sessions', 'display_name' => 'Delete Sessions', 'group' => 'sessions', 'description' => 'Delete sessions'],
+            ['name' => 'approve_sessions', 'display_name' => 'Approve Sessions', 'group' => 'sessions', 'description' => 'Approve pending sessions'],
+            ['name' => 'reject_sessions', 'display_name' => 'Reject Sessions', 'group' => 'sessions', 'description' => 'Reject session requests'],
             ['name' => 'generate_qr', 'display_name' => 'Generate QR Codes', 'group' => 'sessions', 'description' => 'Generate QR codes for sessions'],
             
             // Attendance Management
             ['name' => 'view_attendance', 'display_name' => 'View Attendance', 'group' => 'attendance', 'description' => 'View attendance records'],
             ['name' => 'mark_attendance', 'display_name' => 'Mark Attendance', 'group' => 'attendance', 'description' => 'Mark own attendance'],
-            ['name' => 'approve_attendance', 'display_name' => 'Approve Attendance', 'group' => 'attendance', 'description' => 'Approve/reject attendance requests'],
+            ['name' => 'approve_attendance', 'display_name' => 'Approve Attendance', 'group' => 'attendance', 'description' => 'Approve attendance requests'],
+            ['name' => 'reject_attendance', 'display_name' => 'Reject Attendance', 'group' => 'attendance', 'description' => 'Reject attendance requests'],
+            ['name' => 'delete_attendance', 'display_name' => 'Delete Attendance', 'group' => 'attendance', 'description' => 'Delete attendance records'],
             ['name' => 'override_attendance', 'display_name' => 'Override Attendance', 'group' => 'attendance', 'description' => 'Override attendance status'],
             
             // Organization Management

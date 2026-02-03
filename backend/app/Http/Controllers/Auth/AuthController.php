@@ -89,22 +89,13 @@ class AuthController extends Controller
                 $requestedRole = 'organization_admin';
             }
 
-            // Determine if approval is required
-            // Roles that require explicit approval
-            $privilegedRoles = ['teacher', 'session_manager', 'event_manager', 'coordinator'];
-            
-            // If requesting a privileged role, force approval required (unless created by an admin)
-            if (in_array($requestedRole, $privilegedRoles)) {
-                // If the creator is NOT an admin/org_admin, they need approval
-                 if (!auth()->check() || (!auth()->user()->isAdmin() && !auth()->user()->hasRole('organization_admin'))) {
-                    $requiresApproval = true;
-                 } else {
-                    // Created by admin, respect input or default to false
-                    $requiresApproval = $request->input('requires_approval', false);
-                 }
-            } else {
-                // For students/others, respect input or default to false
+            // STRICT: All new registrations require approval unless created by an admin
+            if (auth()->check() && (auth()->user()->isAdmin() || auth()->user()->hasRole('organization_admin'))) {
+                // Created by admin, respect input or default to false (auto-approve)
                 $requiresApproval = $request->input('requires_approval', false);
+            } else {
+                // Self-registration: ALWAYS requires approval
+                $requiresApproval = true;
             }
             
             // Create user
