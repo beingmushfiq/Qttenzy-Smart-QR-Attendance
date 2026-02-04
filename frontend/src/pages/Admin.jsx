@@ -378,6 +378,24 @@ const AdminSessions = () => {
     }
   }
 
+  const handleStatusChange = async (sessionId, newStatus) => {
+    try {
+      // Optimistic update
+      setSessions(prevSessions =>
+        prevSessions.map(session =>
+          session.id === sessionId ? { ...session, status: newStatus } : session
+        )
+      )
+
+      await sessionAPI.update(sessionId, { status: newStatus })
+      toast.success(`Session status updated to ${newStatus}`)
+    } catch (error) {
+      console.error('Error updating status:', error)
+      toast.error('Failed to update status')
+      fetchSessions()
+    }
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center h-64 text-white/50">Loading sessions...</div>
   }
@@ -413,11 +431,20 @@ const AdminSessions = () => {
                   <td className="py-3 px-4 text-white/60">{session.organization?.name || 'N/A'}</td>
                   <td className="py-3 px-4 text-white/60">{session.creator?.name || 'N/A'}</td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
-                      session.is_active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
-                    }`}>
-                      {session.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                    <select
+                      value={session.status}
+                      onChange={(e) => handleStatusChange(session.id, e.target.value)}
+                      className={`px-2 py-1 text-xs font-semibold rounded-lg border bg-transparent cursor-pointer focus:outline-none ${
+                        session.status === 'active' ? 'text-green-300 border-green-500/30' :
+                        session.status === 'completed' ? 'text-white/60 border-white/10' :
+                        'text-yellow-500 border-yellow-500/30'
+                      }`}
+                    >
+                      <option value="draft" className="bg-dark text-white">Draft</option>
+                      <option value="active" className="bg-dark text-white">Active</option>
+                      <option value="completed" className="bg-dark text-white">Completed</option>
+                      <option value="cancelled" className="bg-dark text-white">Cancelled</option>
+                    </select>
                   </td>
                   <td className="py-3 px-4">
                     <button

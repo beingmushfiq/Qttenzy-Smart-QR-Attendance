@@ -61,6 +61,25 @@ const SessionList = () => {
     }));
   };
 
+  const handleStatusChange = async (sessionId, newStatus) => {
+    try {
+      // Optimistic update
+      setSessions(prevSessions => 
+        prevSessions.map(session => 
+          session.id === sessionId ? { ...session, status: newStatus } : session
+        )
+      );
+
+      await sessionAPI.update(sessionId, { status: newStatus });
+      toast.success(`Session status updated to ${newStatus}`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status');
+      // Revert on failure
+      fetchSessions();
+    }
+  };
+
   // Group sessions by organization
   const groupedSessions = sessions.reduce((acc, session) => {
     const orgName = session.organization?.name || 'General Sessions';
@@ -166,14 +185,31 @@ const SessionList = () => {
                     className="group hover:border-premium-primary/30 border-white/5 transition-all cursor-pointer relative overflow-hidden"
                   >
                     {/* Status Badge */}
-                    <div className="absolute top-6 right-6">
-                      <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl border ${
-                        session.status === 'active' ? 'bg-premium-accent/10 text-premium-accent border-premium-accent/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' :
-                        session.status === 'completed' ? 'bg-white/5 text-white/30 border-white/10' :
-                        'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                      }`}>
-                        {session.status}
-                      </span>
+                    <div className="absolute top-6 right-6 z-10" onClick={(e) => e.stopPropagation()}>
+                      {(user?.role === 'admin' || user?.role === 'super_admin' || user?.id === session.created_by) ? (
+                        <select
+                          value={session.status}
+                          onChange={(e) => handleStatusChange(session.id, e.target.value)}
+                          className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl border appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-dark ${
+                            session.status === 'active' ? 'bg-premium-accent/10 text-premium-accent border-premium-accent/20 focus:ring-premium-accent/50' :
+                            session.status === 'completed' ? 'bg-white/5 text-white/30 border-white/10 focus:ring-white/30' :
+                            'bg-yellow-500/10 text-yellow-500 border-yellow-500/20 focus:ring-yellow-500/50'
+                          }`}
+                        >
+                          <option value="draft" className="bg-dark text-white">Draft</option>
+                          <option value="active" className="bg-dark text-white">Active</option>
+                          <option value="completed" className="bg-dark text-white">Completed</option>
+                          <option value="cancelled" className="bg-dark text-white">Cancelled</option>
+                        </select>
+                      ) : (
+                        <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl border ${
+                          session.status === 'active' ? 'bg-premium-accent/10 text-premium-accent border-premium-accent/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' :
+                          session.status === 'completed' ? 'bg-white/5 text-white/30 border-white/10' :
+                          'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                        }`}>
+                          {session.status}
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 group-hover:text-premium-primary transition-colors pr-16 sm:pr-20">{session.title}</h3>

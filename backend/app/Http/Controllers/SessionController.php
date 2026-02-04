@@ -240,11 +240,10 @@ class SessionController extends Controller
             'capacity', 'allow_entry_exit', 'late_threshold_minutes'
         ]);
 
-        // STRICT: Only admins/super admins can change status to/from active/completed etc.
-        // If non-admin tries to change status, simple ignore it or force it to remain what it was unless it's a draft->draft update (which is fine)
+        // STRICT: Only admins/super admins OR the session creator can change status.
         if (isset($data['status']) && $data['status'] !== $session->status) {
-            if (!auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin()) {
-                unset($data['status']); // Prevent status change
+            if (!auth()->user()->isAdmin() && !auth()->user()->isSuperAdmin() && $session->created_by !== auth()->id()) {
+                unset($data['status']); // Prevent status change if not admin or creator
             }
         }
 
