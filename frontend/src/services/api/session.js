@@ -21,8 +21,8 @@ export const sessionAPI = {
     return apiClient.delete(`/sessions/${id}`);
   },
   
-  getQR: async (id) => {
-    return apiClient.get(`/sessions/${id}/qr`);
+  getQR: async (id, data = {}) => {
+    return apiClient.get(`/sessions/${id}/qr`, { params: data });
   }
 };
 

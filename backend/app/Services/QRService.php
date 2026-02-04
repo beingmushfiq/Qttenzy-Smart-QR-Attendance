@@ -12,16 +12,16 @@ class QRService
     /**
      * Generate QR code for a session
      */
-    public function generateQR(int $sessionId): array
+    public function generateQR(int $sessionId, int $validityMinutes = 10): array
     {
         $session = Session::findOrFail($sessionId);
         
         // Generate unique code
         $code = $this->generateUniqueCode($sessionId);
         
-        // Set expiration (5 minutes default, or session end time)
+        // Set expiration (validityMinutes default 10, or session end time)
         $expiresAt = min(
-            now()->addMinutes(5),
+            now()->addMinutes($validityMinutes),
             Carbon::parse($session->end_time)
         );
 
@@ -30,7 +30,7 @@ class QRService
             'code' => $code,
             'expires_at' => $expiresAt,
             'is_active' => true,
-            'rotation_interval' => 300 // 5 minutes
+            'rotation_interval' => $validityMinutes * 60 // Convert to seconds
         ]);
 
         // Return code without image generation to avoid GD dependency

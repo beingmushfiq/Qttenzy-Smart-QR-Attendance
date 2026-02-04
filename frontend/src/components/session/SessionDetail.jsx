@@ -20,6 +20,8 @@ const SessionDetail = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [validityHours, setValidityHours] = useState('');
+  const [validityMinutes, setValidityMinutes] = useState('');
 
   useEffect(() => {
     fetchSession();
@@ -45,7 +47,10 @@ const SessionDetail = () => {
   const handleGetQR = async () => {
     try {
       setLoading(true);
-      const response = await sessionAPI.getQR(id);
+      const response = await sessionAPI.getQR(id, {
+        validity_hours: validityHours,
+        validity_minutes: validityMinutes
+      });
       setQrData(response.data);
       setShowQR(true);
     } catch (error) {
@@ -201,12 +206,44 @@ const SessionDetail = () => {
               )}
 
               {isAdminOrManager && (
-                <button
-                  onClick={handleGetQR}
-                  className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-2xl border border-white/10 transition-all"
-                >
-                  Generate Session QR
-                </button>
+                <div className="space-y-3">
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">QR Verification Time</p>
+                    <div className="flex gap-3">
+                      <div className="flex-1 space-y-1">
+                         <label className="text-[10px] text-white/30 uppercase font-bold pl-1">Hours</label>
+                         <input
+                           type="number"
+                           min="0"
+                           max="24"
+                           placeholder="0"
+                           value={validityHours}
+                           onChange={(e) => setValidityHours(e.target.value)}
+                           className="w-full bg-black/20 text-white border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-premium-primary/50 transition-colors"
+                         />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                         <label className="text-[10px] text-white/30 uppercase font-bold pl-1">Minutes</label>
+                         <input
+                           type="number"
+                           min="0"
+                           max="59"
+                           placeholder="10"
+                           value={validityMinutes}
+                           onChange={(e) => setValidityMinutes(e.target.value)}
+                           className="w-full bg-black/20 text-white border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-premium-primary/50 transition-colors"
+                         />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={handleGetQR}
+                    className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-2xl border border-white/10 transition-all"
+                  >
+                    Generate Session QR
+                  </button>
+                </div>
               )}
             </div>
           </GlassCard>

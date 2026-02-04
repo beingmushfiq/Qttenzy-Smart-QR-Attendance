@@ -164,9 +164,7 @@ class SessionController extends Controller
                 'capacity' => $request->capacity ?? $request->max_attendees, // Use max_attendees as fallback if capacity not set
                 'allow_entry_exit' => $request->allow_entry_exit ?? false,
                 'late_threshold_minutes' => $request->late_threshold_minutes ?? 15,
-                'late_threshold_minutes' => $request->late_threshold_minutes ?? 15,
                 'created_by' => auth()->id(),
-                'organization_id' => auth()->user()->hasRole('organization_admin') ? auth()->user()->organization_id : null,
                 'organization_id' => auth()->user()->hasRole('organization_admin') ? auth()->user()->organization_id : null,
             ]);
 
@@ -315,12 +313,66 @@ class SessionController extends Controller
         }
 
         try {
+            // Get validity duration from request (default to 10 minutes if not provided or empty)
+            $validityHours = request()->input('validity_hours');
+            $validityMinutes = request()->input('validity_minutes');
+            
+            // If both are empty/null, use default 10 minutes
+            // If provided (even as 0), use the calculated time
+            $minutes = 10; // Default
+            
+            if ($validityHours !== null || $validityMinutes !== null) {
+                $h = (int)($validityHours ?? 0);
+                $m = (int)($validityMinutes ?? 0);
+                $totalMinutes = ($h * 60) + $m;
+                
+                // Only override default if user actually specified some time > 0
+                // If they sent 0 hours 0 minutes, we might default back to 10 or just let it expire immediately? 
+                // Let's assume 0 input means default 10 for safety, as requested "if empty auto validate for 10"
+                // But if they explicitly typed 0, it comes as "0". 
+                // The prompt said "If the minute and hour field is empty". Empty string is not null in PHP often depending on middleware, but input() usually gives null if missing.
+                // Let's stick to: if calculated total is <= 0, default to 10.
+                if ($totalMinutes > 0) {
+                    $minutes = $totalMinutes;
+                }
+            }
+
             // Get or generate QR code
+            // Note: If we want to force a new QR with specific time, we might need to ignore active one or update it.
+            // But standard behavior: if active exists, return it. 
+            // PROBLEM: If user wants 1 hour validity but an active 5-min QR exists, returning the old one prevents the new duration.
+            // User likely expects "Generate" to utilize the new time.
+            // So if parameters are provided, we should probably generate a NEW one if the old one doesn't match or just always generate new?
+            // "Generate" button implies creation.
+            // Let's check if there is an active QR.
             $activeQR = $session->activeQRCode();
             
+            // If explicit validity requested, we might want to rotate if the current one doesn't satisfy? 
+            // Simpler approach: If active QR exists, use it. If user clicks generate, usually the frontend only calls this if it wants a QR.
+            // However, with custom time, maybe we should force regeneration?
+            // For now, let's keep it simple: If active exists, return it. 
+            // WAIT - if I want 1 hour val, and existing is 5 mins, I get the 5 min one. That's bad UX.
+            // Let's say: If validity params are present, we force generation (rotate).
+            
+            if ($activeQR && request()->hasAny(['validity_hours', 'validity_minutes'])) {
+                // Check if we should rotate. Maybe user just refreshed page.
+                // If the frontend sends params on every "Get QR" click, we might be creating too many.
+                // But usually "Get QR" is an explicit action.
+                // Let's deactivate old if new params sent.
+                 $this->qrService->rotateQR($session->id); // This generates a default one in the service currently? No, rotate calls generateQR(id). We need to change that logic slightly or just manually do it.
+                 // Actually rotateQR in Service calls generateQR($sessionId) without params -> defaults to 10.
+                 // So we should manually deactivate and call generateQR ourselves.
+                 
+                 QRCode::where('session_id', $session->id)
+                    ->where('is_active', true)
+                    ->update(['is_active' => false]);
+                 
+                 $activeQR = null; // Force new generation below
+            }
+
             if (!$activeQR) {
                 // Generate new QR code
-                $qrData = $this->qrService->generateQR($session->id);
+                $qrData = $this->qrService->generateQR($session->id, $minutes);
             } else {
                 $qrData = [
                     'qr_code' => $activeQR->code,

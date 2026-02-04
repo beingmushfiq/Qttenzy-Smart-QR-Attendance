@@ -37,10 +37,10 @@ const SessionList = () => {
       const sessionArray = Array.isArray(sessionsData) ? sessionsData : sessionsData.data || [];
       setSessions(sessionArray);
       
-      // Initialize all groups as expanded by default
-      const orgs = [...new Set(sessionArray.map(s => s.organization?.name || 'Other'))];
-      const initialExpanded = orgs.reduce((acc, org) => ({ ...acc, [org]: true }), {});
-      setExpandedOrgs(initialExpanded);
+      // Groups are collapsed by default
+      // const orgs = [...new Set(sessionArray.map(s => s.organization?.name || 'Other'))];
+      // const initialExpanded = orgs.reduce((acc, org) => ({ ...acc, [org]: true }), {});
+      // setExpandedOrgs(initialExpanded);
       
     } catch (error) {
       console.error('Error fetching sessions:', error);
