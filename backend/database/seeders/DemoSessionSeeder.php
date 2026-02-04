@@ -20,6 +20,9 @@ class DemoSessionSeeder extends Seeder
     /**
      * Run the database seeds.
      */
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
         $this->command->info("STARTING DemoSessionSeeder");
@@ -40,7 +43,22 @@ class DemoSessionSeeder extends Seeder
 
         $now = Carbon::now();
 
+        // Helper closure to cleanup duplicates
+        $cleanupDuplicates = function($title, $orgId) {
+            $sessions = Session::where('title', $title)
+                              ->where('organization_id', $orgId)
+                              ->orderBy('id')
+                              ->get();
+            
+            if ($sessions->count() > 1) {
+                $this->command->info("  - Found {$sessions->count()} duplicates for '{$title}'. Keeping one, deleting rest.");
+                // Keep the first one, delete the rest
+                $sessions->skip(1)->each->forceDelete();
+            }
+        };
+
         // Session 1: Active session happening now (DU)
+        $cleanupDuplicates('Advanced Database Systems - Lecture 5', $du?->id);
         $session1 = Session::updateOrCreate(
             ['title' => 'Advanced Database Systems - Lecture 5'],
             [
@@ -75,6 +93,7 @@ class DemoSessionSeeder extends Seeder
         }
 
         // Session 2: Upcoming session (BUET)
+        $cleanupDuplicates('Software Engineering Principles', $buet?->id);
         $session2 = Session::updateOrCreate(
             ['title' => 'Software Engineering Principles'],
             [
@@ -99,6 +118,7 @@ class DemoSessionSeeder extends Seeder
         );
 
         // Session 3: Completed session (yesterday)
+        $cleanupDuplicates('Machine Learning Fundamentals', $du?->id);
         $session3 = Session::updateOrCreate(
             ['title' => 'Machine Learning Fundamentals'],
             [
@@ -123,6 +143,7 @@ class DemoSessionSeeder extends Seeder
         );
 
         // Session 4: Recurring daily session (parent)
+        $cleanupDuplicates('Data Structures & Algorithms - Daily Practice', $buet?->id);
         $recurringDaily = Session::updateOrCreate(
             ['title' => 'Data Structures & Algorithms - Daily Practice'],
             [
@@ -148,6 +169,7 @@ class DemoSessionSeeder extends Seeder
         );
 
         // Session 5: Recurring weekly session (parent)
+        $cleanupDuplicates('Professional Development Workshop', $ctc?->id);
         $recurringWeekly = Session::updateOrCreate(
             ['title' => 'Professional Development Workshop'],
             [
@@ -174,6 +196,7 @@ class DemoSessionSeeder extends Seeder
         );
 
         // Session 6: Pre-registered session with payment
+        $cleanupDuplicates('Advanced Excel & Data Analytics', $ctc?->id);
         $session6 = Session::updateOrCreate(
             ['title' => 'Advanced Excel & Data Analytics'],
             [
@@ -199,6 +222,7 @@ class DemoSessionSeeder extends Seeder
         );
 
         // Session 7: Draft session (not yet published)
+        $cleanupDuplicates('Blockchain Technology & Cryptocurrencies', $du?->id);
         $session7 = Session::updateOrCreate(
             ['title' => 'Blockchain Technology & Cryptocurrencies'],
             [
@@ -223,6 +247,7 @@ class DemoSessionSeeder extends Seeder
         );
 
         // Session 8: Cancelled session
+        $cleanupDuplicates('Network Security - CANCELLED', $buet?->id);
         $session8 = Session::updateOrCreate(
             ['title' => 'Network Security - CANCELLED'],
             [
@@ -247,6 +272,7 @@ class DemoSessionSeeder extends Seeder
         );
 
         // Session 9: Full capacity session
+        $cleanupDuplicates('Digital Marketing Masterclass - FULL', $ctc?->id);
         $session9 = Session::updateOrCreate(
             ['title' => 'Digital Marketing Masterclass - FULL'],
             [
@@ -272,6 +298,7 @@ class DemoSessionSeeder extends Seeder
         );
 
         // Session 10: Past completed session (for attendance history)
+        $cleanupDuplicates('Web Development Bootcamp - Day 1', $du?->id);
         $session10 = Session::updateOrCreate(
             ['title' => 'Web Development Bootcamp - Day 1'],
             [
@@ -309,15 +336,7 @@ class DemoSessionSeeder extends Seeder
         }
 
         $this->command->info('✓ Demo sessions seeded successfully!');
-        $this->command->info('  - 10 sessions created');
-        $this->command->info('  - 1 active session (happening now)');
-        $this->command->info('  - 1 upcoming session');
-        $this->command->info('  - 2 completed sessions');
-        $this->command->info('  - 1 recurring daily session');
-        $this->command->info('  - 1 recurring weekly session');
-        $this->command->info('  - 1 draft session');
-        $this->command->info('  - 1 cancelled session');
-        $this->command->info('  - 1 full capacity session');
+        $this->command->info('  - 10 sessions created/updated');
 
         // --- MERGED FROM ActiveSessionSeeder ---
         $this->command->info("Seeding Additional Active Sessions for ALL Organizations...");
@@ -362,45 +381,44 @@ class DemoSessionSeeder extends Seeder
             }
 
             foreach ($sessionTopics as $index => $topic) {
-                // Check if session already exists to avoid duplicates if re-run
-                $exists = Session::where('organization_id', $organization->id)
-                                 ->where('title', $topic)
-                                 ->exists();
+                $cleanupDuplicates($topic, $organization->id);
                 
-                if ($exists) {
-                    continue;
-                }
-
                 $sessionDate = Carbon::now();
                 
-                $session = Session::create([
-                    'title' => $topic,
-                    'description' => "A deep dive into $topic. Join us for a comprehensive session.",
-                    'organization_id' => $organization->id,
-                    'start_time' => $sessionDate->copy()->addHours($index + 1), // Staggered start times
-                    'end_time' => $sessionDate->copy()->addHours($index + 3),
-                    'location_lat' => 23.7000 + ($index * 0.01),
-                    'location_lng' => 90.3000 + ($index * 0.01),
-                    'location_name' => "Room " . (101 + $index),
-                    'radius_meters' => 100,
-                    'session_type' => 'open',
-                    'status' => 'active',
-                    'requires_payment' => false,
-                    'recurrence_type' => 'one_time',
-                    'capacity' => 50,
-                    'current_count' => 0,
-                    'created_by' => $creator->id,
-                ]);
+                $session = Session::updateOrCreate(
+                    [
+                        'title' => $topic,
+                        'organization_id' => $organization->id
+                    ],
+                    [
+                        'description' => "A deep dive into $topic. Join us for a comprehensive session.",
+                        'start_time' => $sessionDate->copy()->addHours($index + 1), // Staggered start times
+                        'end_time' => $sessionDate->copy()->addHours($index + 3),
+                        'location_lat' => 23.7000 + ($index * 0.01),
+                        'location_lng' => 90.3000 + ($index * 0.01),
+                        'location_name' => "Room " . (101 + $index),
+                        'radius_meters' => 100,
+                        'session_type' => 'open',
+                        'status' => 'active',
+                        'requires_payment' => false,
+                        'recurrence_type' => 'one_time',
+                        'capacity' => 50,
+                        'current_count' => 0,
+                        'created_by' => $creator->id,
+                    ]
+                );
 
                 // Create Active QR Code
-                QRCode::create([
-                    'session_id' => $session->id,
-                    'code' => 'QR-' . strtoupper(bin2hex(random_bytes(8))),
-                    'is_active' => true,
-                    'expires_at' => $session->end_time,
-                ]);
+                if ($session->qrCodes()->doesntExist()) {
+                    QRCode::create([
+                        'session_id' => $session->id,
+                        'code' => 'QR-' . strtoupper(bin2hex(random_bytes(8))),
+                        'is_active' => true,
+                        'expires_at' => $session->end_time,
+                    ]);
+                }
 
-                $this->command->info("  Created Extra Active Session: $topic");
+                $this->command->info("  Created/Updated Extra Active Session: $topic");
             }
         }
     }

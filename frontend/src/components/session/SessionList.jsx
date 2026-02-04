@@ -14,6 +14,7 @@ const SessionList = () => {
     type: '',
     search: ''
   });
+  const [expandedOrgs, setExpandedOrgs] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,7 +34,14 @@ const SessionList = () => {
       console.log('Sessions response:', response);
       // Handle both paginated and non-paginated responses
       const sessionsData = response.data?.data || response.data || response || [];
-      setSessions(Array.isArray(sessionsData) ? sessionsData : sessionsData.data || []);
+      const sessionArray = Array.isArray(sessionsData) ? sessionsData : sessionsData.data || [];
+      setSessions(sessionArray);
+      
+      // Initialize all groups as expanded by default
+      const orgs = [...new Set(sessionArray.map(s => s.organization?.name || 'Other'))];
+      const initialExpanded = orgs.reduce((acc, org) => ({ ...acc, [org]: true }), {});
+      setExpandedOrgs(initialExpanded);
+      
     } catch (error) {
       console.error('Error fetching sessions:', error);
       toast.error('Failed to load sessions');
@@ -45,6 +53,23 @@ const SessionList = () => {
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
+
+  const toggleOrg = (orgName) => {
+    setExpandedOrgs(prev => ({
+      ...prev,
+      [orgName]: !prev[orgName]
+    }));
+  };
+
+  // Group sessions by organization
+  const groupedSessions = sessions.reduce((acc, session) => {
+    const orgName = session.organization?.name || 'General Sessions';
+    if (!acc[orgName]) {
+      acc[orgName] = [];
+    }
+    acc[orgName].push(session);
+    return acc;
+  }, {});
 
   if (loading && sessions.length === 0) {
     return <div className="flex items-center justify-center h-64 text-white/50">Loading sessions...</div>;
@@ -109,70 +134,98 @@ const SessionList = () => {
         </div>
       </GlassCard>
 
-      {/* Sessions Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
-        {sessions.map((session) => (
-          <GlassCard
-            key={session.id}
-            className="group hover:border-premium-primary/30 border-white/5 transition-all cursor-pointer relative overflow-hidden"
-          >
-            {/* Status Badge */}
-            <div className="absolute top-6 right-6">
-              <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl border ${
-                session.status === 'active' ? 'bg-premium-accent/10 text-premium-accent border-premium-accent/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' :
-                session.status === 'completed' ? 'bg-white/5 text-white/30 border-white/10' :
-                'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-              }`}>
-                {session.status}
-              </span>
-            </div>
-
-            <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 group-hover:text-premium-primary transition-colors pr-16 sm:pr-20">{session.title}</h3>
-            
-            <p className="text-white/40 text-sm leading-relaxed mb-8 line-clamp-2 font-medium">
-              {session.description || 'No description provided for this session.'}
-            </p>
-
-            <div className="space-y-4 mb-8">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg">📅</div>
-                <div>
-                  <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Starts At</p>
-                  <p className="text-sm text-white/80 font-bold">{formatDate(session.start_time)}</p>
-                </div>
+      {/* Grouped Sessions */}
+      <div className="space-y-8">
+        {Object.entries(groupedSessions).map(([orgName, orgSessions]) => (
+          <div key={orgName} className="space-y-4">
+            {/* Organization Folder Header */}
+            <button 
+              onClick={() => toggleOrg(orgName)}
+              className="w-full flex items-center gap-3 group text-left focus:outline-none"
+            >
+              <div className={`p-2 rounded-xl transition-all ${expandedOrgs[orgName] ? 'bg-premium-primary/20 text-premium-primary' : 'bg-white/5 text-white/40 group-hover:bg-white/10'}`}>
+                {expandedOrgs[orgName] ? '📂' : '📁'}
               </div>
-              
-              {session.location_name && (
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg">📍</div>
-                  <div>
-                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Location</p>
-                    <p className="text-sm text-white/80 font-bold">{session.location_name}</p>
-                  </div>
-                </div>
-              )}
-            </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-white/90 group-hover:text-white transition-colors">
+                {orgName}
+                <span className="ml-3 text-sm font-medium text-white/30 bg-white/5 px-2.5 py-1 rounded-lg">
+                  {orgSessions.length} {orgSessions.length === 1 ? 'Session' : 'Sessions'}
+                </span>
+              </h2>
+              <div className="ml-auto text-white/20 group-hover:text-white/50 transition-colors">
+                {expandedOrgs[orgName] ? '▼' : '▶'}
+              </div>
+            </button>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-6 border-t border-white/5">
-              {session.requires_payment ? (
-                <div className="text-premium-primary font-bold text-lg">
-                  ${session.payment_amount}
-                </div>
-              ) : (
-                <div className="text-premium-accent font-bold text-sm tracking-tight">Free Access</div>
-              )}
-              
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/sessions/${session.id}`);
-                }}
-                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-white/5 group-hover:bg-premium-primary group-hover:text-white text-white/60 text-xs sm:text-sm font-bold transition-all border border-white/5 group-hover:border-premium-primary group-hover:shadow-lg group-hover:shadow-premium-primary/20 whitespace-nowrap"
-              >
-                View Details
-              </button>
-            </div>
-          </GlassCard>
+            {/* Sessions Grid */}
+            {expandedOrgs[orgName] && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8 pl-0 sm:pl-4 transition-all">
+                {orgSessions.map((session) => (
+                  <GlassCard
+                    key={session.id}
+                    className="group hover:border-premium-primary/30 border-white/5 transition-all cursor-pointer relative overflow-hidden"
+                  >
+                    {/* Status Badge */}
+                    <div className="absolute top-6 right-6">
+                      <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl border ${
+                        session.status === 'active' ? 'bg-premium-accent/10 text-premium-accent border-premium-accent/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' :
+                        session.status === 'completed' ? 'bg-white/5 text-white/30 border-white/10' :
+                        'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                      }`}>
+                        {session.status}
+                      </span>
+                    </div>
+
+                    <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 group-hover:text-premium-primary transition-colors pr-16 sm:pr-20">{session.title}</h3>
+                    
+                    <p className="text-white/40 text-sm leading-relaxed mb-8 line-clamp-2 font-medium">
+                      {session.description || 'No description provided for this session.'}
+                    </p>
+
+                    <div className="space-y-4 mb-8">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg">📅</div>
+                        <div>
+                          <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Starts At</p>
+                          <p className="text-sm text-white/80 font-bold">{formatDate(session.start_time)}</p>
+                        </div>
+                      </div>
+                      
+                      {session.location_name && (
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg">📍</div>
+                          <div>
+                            <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Location</p>
+                            <p className="text-sm text-white/80 font-bold">{session.location_name}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-6 border-t border-white/5">
+                      {session.requires_payment ? (
+                        <div className="text-premium-primary font-bold text-lg">
+                          ${session.payment_amount}
+                        </div>
+                      ) : (
+                        <div className="text-premium-accent font-bold text-sm tracking-tight">Free Access</div>
+                      )}
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/sessions/${session.id}`);
+                        }}
+                        className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-white/5 group-hover:bg-premium-primary group-hover:text-white text-white/60 text-xs sm:text-sm font-bold transition-all border border-white/5 group-hover:border-premium-primary group-hover:shadow-lg group-hover:shadow-premium-primary/20 whitespace-nowrap"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </GlassCard>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </div>
 
